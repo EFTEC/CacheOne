@@ -6,7 +6,14 @@ use DateTime;
 use Redis;
 use ReflectionObject;
 
-
+/**
+ * Class CacheOneRedis
+ * @package eftec
+ * @version 1.0 2018-06-09
+ * @link https://github.com/EFTEC/CacheOne
+ * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
+ * @license  MIT
+ */
 class CacheOneRedis implements ICacheOne {
 
     /** @var bool if the cache is up */
@@ -17,17 +24,17 @@ class CacheOneRedis implements ICacheOne {
 
     /**
      * Open the cache
-     * @param string $server (if any)
-     * @param string $schema (if any)
-     * @param int|string $port (if any)
-     * @param string $user (if any)
-     * @param string $password (if any)
+     * @param string $server ip of the server.
+     * @param string $schema Default schema (optional).
+     * @param int|string $port By default is 6379
+     * @param string $user (use future)
+     * @param string $password (use future)
      */
     public function __construct($server = '127.0.0.1', $schema = "", $port = 6379, $user = "", $password = "")
     {
         if (class_exists("Redis")) {
             $this->redis= new Redis();
-            $r=$this->redis->pconnect($server,$port, 2.5); // 2.5 sec timeout.
+            $r=$this->redis->pconnect($server,$port, 4); // 4 sec timeout to connects.
             if ($r===false) {
                 $this->redis=null;
                 $this->enabled=false;

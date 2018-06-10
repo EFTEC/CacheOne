@@ -2,6 +2,14 @@
 
 namespace eftec;
 
+/**
+ * Interface ICacheOne
+ * @package eftec
+ * @version 1.0 2018-06-09
+ * @link https://github.com/EFTEC/CacheOne
+ * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
+ * @license  MIT
+ */
 interface ICacheOne
 {
     /**
