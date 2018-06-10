@@ -9,7 +9,7 @@ use ReflectionObject;
 /**
  * Class CacheOneRedis
  * @package eftec
- * @version 1.3 2018-06-09
+ * @version 1.3.1 2018-06-09
  * @link https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
