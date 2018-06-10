@@ -7,7 +7,7 @@
     "redis",
     "php"
   ],
-  "homepage": "https://github.com/EFTEC",
+  "homepage": "https://github.com/EFTEC/CacheOne",
   "authors": [
     {
       "name": "Jorge Castro Castillo",
