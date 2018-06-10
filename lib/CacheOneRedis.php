@@ -79,14 +79,14 @@ class CacheOneRedis implements ICacheOne {
     /**
      * @param string $key key to return.
      * @param bool $jsonDecode if false (default value) then the result is json-decoded, otherwise is returned raw.
-     * @return bool|mixed returns false if the value is not found, otherwise it returns the value.
+     * @return mixed returns null if the value is not found, otherwise it returns the value.
      */
     function get($key, $jsonDecode = false)
     {
-        if ($this->redis==null) return false;
+        if ($this->redis==null) return null;
 
         $v=$this->redis->get($key);
-        if ($v===false) return false;
+        if ($v===false) return null;
         $result = $jsonDecode ? $v : json_decode($v);
         return $result;
     }
