@@ -33,6 +33,7 @@ $cache->invalidateGroup("group");
 
 # Version
 
+- 1.4   2018-09-05 Fixed the groups
 - 1.3.1 2018-06-09 First published version
 
 # License

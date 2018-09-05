@@ -3,13 +3,14 @@
 namespace eftec;
 
 use DateTime;
+use Exception;
 use Redis;
 use ReflectionObject;
 
 /**
  * Class CacheOneRedis
  * @package eftec
- * @version 1.3.1 2018-06-09
+ * @version 1.4 2018-09-05
  * @link https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -21,6 +22,8 @@ class CacheOneRedis implements ICacheOne {
 
     /** @var Redis */
     var $redis;
+    /** @var string  */
+    var $schema='';
 
     /**
      * Open the cache
@@ -34,16 +37,22 @@ class CacheOneRedis implements ICacheOne {
     {
         if (class_exists("Redis")) {
             $this->redis= new Redis();
-            $r=$this->redis->pconnect($server,$port, 4); // 4 sec timeout to connects.
+            try {
+                $r=@$this->redis->pconnect($server,$port, 8); // 4 sec timeout to connects.
+            } catch (Exception $e) {
+                $this->redis=null;
+                $this->enabled=false;
+                return;
+            }
             if ($r===false) {
                 $this->redis=null;
                 $this->enabled=false;
                 return;
             } else {
-                if ($schema) {
-                    $this->redis->setOption(Redis::OPT_PREFIX, $schema.":");
-                }
+                $this->schema=$schema;
+
                 $this->enabled=true;
+
                 return;
             }
         }
@@ -64,28 +73,22 @@ class CacheOneRedis implements ICacheOne {
     function set($group, $key, $value, $duration = 1440): bool
     {
         if ($this->redis == null) return false;
-        if ($group!="") {
-            $cat = json_decode(@$this->redis->get("_group:".$group), true);
-            if (!$cat) {
-                $cat = array(); // created a new catalog
-            }
-            $cat[$key] = 1;
-            @$this->redis->set("_group:".$group, json_encode($cat)); // we store the catalog of the group
-        }
-        $result = $this->redis->set($key, json_encode($value), $duration);
+
+        $result = $this->redis->set($this->schema.':'.$group.':'.$key, json_encode($value), $duration);
         return $result;
     }
 
     /**
+     * @param string $group if any, it's a group or category of elements.<br>
+     *        It's used when we need to invalidate (delete) a group of keys.
      * @param string $key key to return.
      * @param bool $jsonDecode if false (default value) then the result is json-decoded, otherwise is returned raw.
      * @return mixed returns null if the value is not found, otherwise it returns the value.
      */
-    function get($key, $jsonDecode = false)
+    function get($group,$key, $jsonDecode = false)
     {
         if ($this->redis==null) return null;
-
-        $v=$this->redis->get($key);
+        $v=$this->redis->get($this->schema.':'.$group.':'.$key);
         if ($v===false) return null;
         $result = $jsonDecode ? $v : json_decode($v);
         return $result;
@@ -97,24 +100,22 @@ class CacheOneRedis implements ICacheOne {
      */
     function invalidateGroup($group): bool
     {
-        if ($this->redis == null) return false;
-        $cat = json_decode(@$this->redis->get("_group:".$group), true);
-        if (!is_array($cat)) return false;
-        foreach($cat as $key=>$val) {
-            $this->redis->del($key);
-        }
-        $this->redis->del("_group:".$group);
-        return true;
+        $it=null;
+        $scan=$this->schema.':'.$group.":*";
+        $keys=$this->redis->scan($it,$scan,99999);
+        if (count($keys)==0) return false;
+        $numDelete=$this->redis->del($keys);
+        return ($numDelete>0);
     }
 
     /**
-     * @param string $key Delete a single key
+     * @param string $fullKey Delete a single key
      * @return bool true if deletes one (or more than one), false if it doesn't delete a key.
      */
-    function invalidate($key): bool
+    function invalidate($fullKey): bool
     {
         if ($this->redis==null) return false;
-        $num=$this->redis->del($key);
+        $num=$this->redis->del($fullKey);
         return ($num>0);
     }
 
@@ -149,7 +150,11 @@ class CacheOneRedis implements ICacheOne {
                         self::fixCast($destination->{$name}, $source->$name);
                     }
                 } else {
+                    //if (property_exists($destination, '$name')) {
                     $destination->{$name} = $source->$name;
+                    //} else {
+                    //    DebugFile("ERROR in REDIS with field $name in class".get_class($destination));
+                    //}
                 }
             }
         }

@@ -34,11 +34,13 @@ interface ICacheOne
     function set($group, $key, $value, $duration = 1440): bool;
 
     /**
+     * @param string $group if any, it's a group or category of elements.<br>
+     *        It's used when we need to invalidate (delete) a group of keys.
      * @param string $key key to return.
      * @param bool $jsonDecode if false (default value) then the result is json-decoded, otherwise is returned raw.
      * @return bool|mixed returns false if the value is not found, otherwise it returns the value.
      */
-    function get($key, $jsonDecode = false);
+    function get($group,$key, $jsonDecode = false);
 
     /**
      * @param string $group Delete an entire group
