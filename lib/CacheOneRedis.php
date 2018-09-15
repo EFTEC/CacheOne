@@ -50,9 +50,7 @@ class CacheOneRedis implements ICacheOne {
                 return;
             } else {
                 $this->schema=$schema;
-
                 $this->enabled=true;
-
                 return;
             }
         }
