@@ -10,7 +10,7 @@ use ReflectionObject;
 /**
  * Class CacheOneRedis
  * @package eftec
- * @version 1.4 2018-09-05
+ * @version 1.4.1 2018-09-15
  * @link https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -74,7 +74,7 @@ class CacheOneRedis implements ICacheOne {
     {
         if ($this->redis == null) return false;
 
-        $result = $this->redis->set($this->schema.':'.$group.':'.$key, json_encode($value), $duration);
+        $result = $this->redis->set($this->getId($group,$key), json_encode($value), $duration);
         return $result;
     }
 
@@ -88,7 +88,7 @@ class CacheOneRedis implements ICacheOne {
     function get($group,$key, $jsonDecode = false)
     {
         if ($this->redis==null) return null;
-        $v=$this->redis->get($this->schema.':'.$group.':'.$key);
+        $v=$this->redis->get($this->getId($group,$key));
         if ($v===false) return null;
         $result = $jsonDecode ? $v : json_decode($v);
         return $result;
@@ -101,8 +101,7 @@ class CacheOneRedis implements ICacheOne {
     function invalidateGroup($group): bool
     {
         $it=null;
-        $scan=$this->schema.':'.$group.":*";
-        $keys=$this->redis->scan($it,$scan,99999);
+        $keys=$this->redis->scan($it,$this->getId($group,"*"),99999);
         if (count($keys)==0) return false;
         $numDelete=$this->redis->del($keys);
         return ($numDelete>0);
@@ -150,14 +149,21 @@ class CacheOneRedis implements ICacheOne {
                         self::fixCast($destination->{$name}, $source->$name);
                     }
                 } else {
-                    //if (property_exists($destination, '$name')) {
                     $destination->{$name} = $source->$name;
-                    //} else {
-                    //    DebugFile("ERROR in REDIS with field $name in class".get_class($destination));
-                    //}
                 }
             }
         }
+    }
+
+    /**
+     * Generates the redis's key
+     * @param $group
+     * @param $key
+     * @return string
+     */
+    private function getId($group,$key) {
+        return ($group)?$this->schema.':'.$group.':'.$key
+            :$this->schema.':'.$group.':'.$key;
     }
 
 
