@@ -1,11 +1,13 @@
 # CacheOne
 CacheOne is a cache class of service for php
 
-First version
 
 # Example
 
 ## Creating a cache (using Redis)
+
+Creates a new connection to redis
+
 ```
 use eftec\CacheOneRedis;
 include "../vendor/autoload.php";
@@ -13,6 +15,9 @@ $cache=new CacheOneRedis("127.0.0.1","",6379);
 ```
 
 ## Storing a value
+
+It store a value inside a group and a key.
+
 ```
 $cache->set("group","key1","hello world");
 $cache->set("group","key2","hola mundo");
@@ -21,14 +26,28 @@ Group is optional and it could be used if we need to invalidate (delete) an enti
 
 
 ## invalidate a key
+
+It invalidates a specific key
+
 ```
 $cache->invalidate("key1");
 ```
 
 
 ## invalidate a group
+
+It invalidates a whole group of keys.
+
 ```
 $cache->invalidateGroup("group");
+```
+
+## Select a database (Redis)
+
+It selects a different database. By default the database is 0.
+
+```
+$cache->select(1);
 ```
 
 # Version
