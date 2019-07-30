@@ -10,7 +10,7 @@ use ReflectionObject;
 /**
  * Class CacheOneRedis
  * @package eftec
- * @version 1.4.1 2018-09-15
+ * @version 1.4.2 2019-07-30
  * @link https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -27,18 +27,23 @@ class CacheOneRedis implements ICacheOne {
 
     /**
      * Open the cache
-     * @param string $server ip of the server.
-     * @param string $schema Default schema (optional).
-     * @param int|string $port By default is 6379
-     * @param string $user (use future)
-     * @param string $password (use future)
+     *
+     * @param string     $server        ip of the server.
+     * @param string     $schema        Default schema (optional).
+     * @param int|string $port          By default is 6379
+     * @param string     $user          (use future)
+     * @param string     $password      (use future)
+     * @param int        $timeout       Timeout (for connection) in seconds. Zero means unlimited
+     * @param int|null   $retry         Retry timeout (in milliseconds)
+     * @param int|null   $readTimeout   Read timeout (in milliseconds). Zero means unlimited
      */
-    public function __construct($server = '127.0.0.1', $schema = "", $port = 6379, $user = "", $password = "")
+    public function __construct($server = '127.0.0.1', $schema = "", $port = 6379
+        , $user = "", $password = "",$timeout=8,$retry=null,$readTimeout=null)
     {
         if (class_exists("Redis")) {
             $this->redis= new Redis();
             try {
-                $r=@$this->redis->pconnect($server,$port, 8); // 4 sec timeout to connects.
+                $r=@$this->redis->pconnect($server,$port, $timeout,null,$retry,$readTimeout); 
             } catch (Exception $e) {
                 $this->redis=null;
                 $this->enabled=false;
@@ -58,7 +63,15 @@ class CacheOneRedis implements ICacheOne {
         $this->enabled=false;
     }
 
-
+    /**
+     * It changes the default database (0) for another one.
+     *
+     * @param int $dbindex
+     * @see https://redis.io/commands/select
+     */
+    function select($dbindex) {
+        $this->redis->select($dbindex);
+    }
 
     /**
      * @param string $group if any, it's a group or category of elements.<br>
