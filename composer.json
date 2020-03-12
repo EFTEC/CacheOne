@@ -18,8 +18,8 @@
   "minimum-stability": "beta",
   "license": "MIT",
   "require": {
-    "php": "^7.0"
-
+    "php": "^7.0",
+    "phpunit/phpunit": "^5.7 || ^6.5"
   },
   "suggest": {
     "ext-apcu": "CacheOneApcu requires it",

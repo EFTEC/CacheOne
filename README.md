@@ -10,12 +10,12 @@ CacheOne is a cache class of service for php. It supports Redis, Memcache and/or
 
 ## Example
 
-```
+```php
 use eftec\CacheOne;
 include "vendor/autoload.php"; // composer's autoload
 $cache=new CacheOne("redis","127.0.0.1","",6379);
 
-$cacheValue=$cache_get('','countries'); // read the cache (if any)
+$cacheValue=$cache->get('','countries'); // read the cache (if any) otherwise false
 if($cacheValue===false) {
     echo "generating a new list of countries..<br>";
     $countries=['USA','Canada','Japan','Chile'];
@@ -34,7 +34,7 @@ var_dump($countries);
 
 Creates a new connection using redis
 
-```
+```php
 use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("redis","127.0.0.1","",6379);
@@ -42,7 +42,7 @@ $cache=new CacheOne("redis","127.0.0.1","",6379);
 
 Creates a new connection using apcu
 
-```
+```php
 use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("apcu");
@@ -50,7 +50,7 @@ $cache=new CacheOne("apcu");
 
 Creates a new connection using memcache
 
-```
+```php
 use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("memcache","127.0.0.1");
@@ -64,7 +64,7 @@ $cache=new CacheOne("memcache","127.0.0.1");
 It store a value inside a group and a key.
 It returns false if the operation failed.
 
-```
+```php
 $cache->set("group","key1","hello world",500);
 $cache->set("group","key2","hola mundo",500);
 ```
@@ -72,14 +72,15 @@ Group is optional and it could be used if we need to invalidate (delete) an enti
 
 ## Getting a value
 
-> function get($group, $key)
+> function get($group, $key, $defaultValue = false)
 
 It gets a value stored in a group (optional) and key. If the
 value is not found then it returns false. Note: a false value could be a valid value.
 
-```
+```php
 $result=$cache->get("group","key1");
-$result=$cache->get("","key2"); 
+$result=$cache->get("","key2");
+$result=$cache->get("","key2","not found"); // if not key2 (groupless) then it returns not found 
 ```
 
 ## invalidate a key
@@ -88,7 +89,7 @@ $result=$cache->get("","key2");
 
 It invalidates a specific key. If the operation fails, then it returns false
 
-```
+```php
 $cache->invalidate("group",key1"); // invalidate a key inside a group
 $cache->invalidate("",key1"); // invalidate a key without a group.
 ```
@@ -100,9 +101,19 @@ $cache->invalidate("",key1"); // invalidate a key without a group.
 
 It invalidates every key(s) inside a group of groups.  It also clean the catalog of the group and sets it to an empty array.
 
-```
+```php
 $cache->invalidateGroup("group"); // invalidate all keys inside group
 $cache->invalidateGroup(["group1","group2"]); // invalidate all key inside group1 and group2
+```
+
+# invalidate all
+
+> invalidateAll()
+
+It invalidates (and delete all the redis repository, memcache or apcu)
+
+```php
+$cache->invalidateAll(); 
 ```
 
 
@@ -112,12 +123,16 @@ $cache->invalidateGroup(["group1","group2"]); // invalidate all key inside group
 
 It selects a different database. By default the database is 0.
 
-```
+```php
 $cache->select(1);
 ```
 
 # Version
 
+- 2.1 2020-23-12
+    * Unit test
+    * get() has a default value $defaultValue
+    * new method invalidateAll()
 - 2.0 2020-03-12 Updated the whole class. Now it works as a single class.
 - 1.4.2 2019-07-30 Added select() to select a different database index. It also adds timeout for the constructor
 - 1.4.1 2018-08-15 Added an internal function that obtains the id.
