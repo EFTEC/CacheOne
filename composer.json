@@ -1,11 +1,12 @@
 {
   "name": "eftec/cacheone",
   "description": "Cache class in a single Class",
-  "version": "1.4.2",
+  "version": "2.0",
   "type": "library",
   "keywords": [
     "redis",
-    "php"
+    "php",
+    "cache"
   ],
   "homepage": "https://github.com/EFTEC/CacheOne",
   "authors": [
@@ -18,6 +19,12 @@
   "license": "MIT",
   "require": {
     "php": "^7.0"
+
+  },
+  "suggest": {
+    "ext-apcu": "CacheOneApcu requires it",
+    "ext-redis": "CacheOneRedis requires it",
+    "ext-memcache": "CacheOneMemcached requires it"
   },
   "autoload": {
     "psr-4": {
@@ -25,4 +32,3 @@
     }
   }
 }
-
