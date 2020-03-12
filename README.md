@@ -8,7 +8,21 @@ CacheOne is a cache class of service for php. It supports Redis, Memcache and/or
 [![php](https://img.shields.io/badge/php-7.x-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
 
-## Example
+- [CacheOne](#cacheone)
+  * [Example](#example)
+  * [Creating a new instance of CacheOne](#creating-a-new-instance-of-cacheone)
+  * [Storing a value](#storing-a-value)
+  * [Getting a value](#getting-a-value)
+  * [invalidate a key](#invalidate-a-key)
+  * [invalidate a group](#invalidate-a-group)
+  * [invalidate all](#invalidate-all)
+  * [Select a database (Redis)](#select-a-database--redis-)
+- [Version](#version)
+- [License](#license)
+
+
+
+# Example
 
 ```php
 use eftec\CacheOne;
@@ -25,9 +39,9 @@ if($cacheValue===false) {
     $countries=$cacheValue;
 }
 var_dump($countries);
-
-
 ```
+
+# Definitions
 
 
 ## Creating a new instance of CacheOne
@@ -54,6 +68,14 @@ Creates a new connection using memcache
 use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("memcache","127.0.0.1");
+```
+
+or creating a new connection, or redis, or memcache or apcu (it takes the first available)
+
+```php
+use eftec\CacheOne;
+include "../vendor/autoload.php";
+$cache=new CacheOne("auto");
 ```
 
 
@@ -106,7 +128,7 @@ $cache->invalidateGroup("group"); // invalidate all keys inside group
 $cache->invalidateGroup(["group1","group2"]); // invalidate all key inside group1 and group2
 ```
 
-# invalidate all
+## invalidate all
 
 > invalidateAll()
 
