@@ -14,7 +14,7 @@ use ReflectionObject;
  * Class CacheOneRedis
  *
  * @package  eftec
- * @version  2.1 2020-03-12
+ * @version  2.2 2020-03-12
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -491,4 +491,47 @@ class CacheOne
         }
     }
 
+    /**
+     * Wrappper of get()
+     * 
+     * @param string $uid
+     * @param string|array $family
+     *
+     * @return mixed
+     * @see \eftec\CacheOne::get
+     */
+    public function getCache($uid, $family = '') {
+        return $this->get($family,$uid);
+    }
+
+    /**
+     * Wrapper of function set()
+     * 
+     * @param string $uid
+     * @param string|array $family
+     * @param null   $data
+     * @param null   $ttl
+     *
+     * @return bool
+     * @see \eftec\CacheOne::set
+     */
+    public function setCache($uid, $family = '', $data = null, $ttl = null) {
+        return $this->set($family,$uid,$data,$ttl);
+    }
+
+    /**
+     * Wrapper of function invalidate()
+     *
+     * @param string $uid
+     * @param string $family
+     *
+     * @return bool
+     * @see \eftec\CacheOne::invalidate
+     *
+     */
+    public function invalidateCache($uid='',$family='') {
+        return $this->invalidate($family,$uid);
+        
+    }
+    
 }

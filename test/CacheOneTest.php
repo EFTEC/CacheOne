@@ -28,10 +28,17 @@ class PdoOneTest extends TestCase
         $cache=new CacheOne($type);
         $cache->select(0);
         $cache->invalidateAll();
+        
+        // wrapper test
+        $this->assertEquals(true,$cache->setCache("key1","family","hello world"));
+        $this->assertEquals("hello world",$cache->getCache("key1","family"));
+        $this->assertEquals(true,$cache->invalidateCache("key1","family"));
+        $this->assertEquals(false,$cache->getCache("key1","family"));
+        
         $this->assertEquals(true,$cache->set("group","key1","hello world"));
         $this->assertEquals(true,$cache->set("group","key1","hello world"));
 
-
+        
 
         $this->assertEquals(true,$cache->set("group","key2","hola mundo"));
         $this->assertEquals('hello world',$cache->get("group","key1"));

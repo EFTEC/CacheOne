@@ -1,6 +1,11 @@
 # CacheOne
 CacheOne is a cache class of service for php. It supports Redis, Memcache and/or APCU.
 
+Unlikely other cache libraries, this library is based in group (optional). So it's suitable to invalidate a single key 
+or an entire group of elements.
+
+
+
 [![Packagist](https://img.shields.io/packagist/v/eftec/CacheOne.svg)](https://packagist.org/packages/eftec/CacheOne)
 [![Total Downloads](https://poser.pugx.org/eftec/CacheOne/downloads)](https://packagist.org/packages/eftec/CacheOne)
 [![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)]()
@@ -151,7 +156,9 @@ $cache->select(1);
 
 # Version
 
-- 2.1 2020-23-12
+- 2.2 2020-03-12
+    * wrappers getCache(),setCache(),invalidateCache()
+- 2.1 2020-03-12
     * Unit test
     * get() has a default value $defaultValue
     * new method invalidateAll()
