@@ -24,8 +24,8 @@ class PdoOneTest extends TestCase
         $this->assertEquals(false,$cache->enabled);
     }
     
-    private function runMe($type)  {
-        $cache=new CacheOne($type);
+    private function runMe($type,$schema)  {
+        $cache=new CacheOne($type,'127.0.0.1',$schema);
         $cache->select(0);
         $cache->invalidateAll();
         
@@ -57,6 +57,11 @@ class PdoOneTest extends TestCase
         $this->assertEquals('hello world',$cache->get("group1","key1"));
         $cache->invalidateGroup(["group2"]);
         $this->assertEquals(false,$cache->get("group1","key1"));
+        // we left some traceover
+        $this->assertEquals(true,$cache->set("group","key1","hello world"));
+        $this->assertEquals(true,$cache->set("group","key2","hello world"));
+        $this->assertEquals(true,$cache->set("group","key3","hello world"));
+        $this->assertEquals(true,$cache->set("group","key4","hello world"));
 
     }
     public function test_cast() {
@@ -76,23 +81,23 @@ class PdoOneTest extends TestCase
     public function test_redis()
     {
         $type='redis';
-        $this->runMe($type);
+        $this->runMe($type,'unittest');
         
     }
     public function test_apcu()
     {
         $type='apcu';
-        $this->runMe($type);
+        $this->runMe($type,'unittest');
 
     }
     public function test_auto()
     {
-        $this->runMe('auto');
+        $this->runMe('auto','unittest');
     }
     public function test_memcache()
     {
         $type='memcache';
-        $this->runMe($type);
+        $this->runMe($type,'unittest');
 
     }
 

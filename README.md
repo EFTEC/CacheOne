@@ -156,6 +156,9 @@ $cache->select(1);
 
 # Version
 
+- 2.2.1 2020-03-12
+    * Internal: key names are not store inside the group. The group is store inside the schema
+    * Internal: The catalog has a duration defined by $cache->catDuration (seconds)
 - 2.2 2020-03-12
     * wrappers getCache(),setCache(),invalidateCache()
 - 2.1 2020-03-12
