@@ -82,23 +82,52 @@ class PdoOneTest extends TestCase
     {
         $type='redis';
         $this->runMe($type,'unittest');
+        $this->runDuration($type,'unittest');
         
     }
     public function test_apcu()
     {
+        // if not, then test fails because it considers the timestamp of execution of php
+        ini_set("apc.use_request_time", 0);
         $type='apcu';
         $this->runMe($type,'unittest');
+        $this->runDuration($type,'unittest');
 
     }
     public function test_auto()
     {
         $this->runMe('auto','unittest');
+        $this->runDuration('auto','unittest');
     }
     public function test_memcache()
     {
         $type='memcache';
         $this->runMe($type,'unittest');
+        $this->runDuration($type,'unittest');
+    }
+    public function runDuration($type,$schema) {
+        $cache=new CacheOne($type,'127.0.0.1',$schema);
+        $cache->select(0);
+        $cache->invalidateAll();
+        $cache->set('group','key','hello world',1);
+        $this->assertEquals('hello world',$cache->get('group','key'));
+        sleep(2); // expires
+        $this->assertEquals(false,$cache->get('group','key'));
+        
+        
+        $cache->invalidateAll();
+        $cache->set('group','key1','hello world',4); // each key expires in 4 seconds
+        $cache->set('group','key2','hello world',4);
+        $cache->set('group','key3','hello world',4);
+        $cache->catDuration=1; // the catalog expires in 1 second
+        sleep(2); // not enough time to expire
+        $cache->invalidateGroup('group'); // the catalog must be alive to expire all the keys
+        $this->assertEquals(false,$cache->get('group','key1'));
+        $this->assertEquals(false,$cache->get('group','key2'));
+        $this->assertEquals(false,$cache->get('group','key3'));
 
+        
+        
     }
 
 }

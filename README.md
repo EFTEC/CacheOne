@@ -155,7 +155,10 @@ $cache->select(1);
 ```
 
 # Version
-
+- 2.2.2 2020-03-13
+    * Now the duration of the catalog is always lasting than the duration of the key
+    * Tested the duration and expiration of the cache.
+    * phpunit now is part of "require-dev" instead of "require"
 - 2.2.1 2020-03-12
     * Internal: key names are not store inside the group. The group is store inside the schema
     * Internal: The catalog has a duration defined by $cache->catDuration (seconds)

@@ -14,7 +14,7 @@ use ReflectionObject;
  * Class CacheOneRedis
  *
  * @package  eftec
- * @version  2.2.1 2020-03-12
+ * @version  2.2.2 2020-03-13
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -441,7 +441,9 @@ class CacheOne
                             }
                         }
                         $cat[$uid] = 1; // we added/updated the catalog
-                        @$this->redis->set($catUid, serialize($cat), $this->catDuration); // we store the catalog back.
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                            ? $duration : $this->catDuration;
+                        @$this->redis->set($catUid, serialize($cat), $catDuration); // we store the catalog back.
                     }
                 }
                 if ($duration === 0) {
@@ -466,8 +468,12 @@ class CacheOne
                             }
                         }
                         $cat[$uid] = 1;
-                        $catDur = ($this->catDuration !== 0) ? time() + $this->catDuration : 0;
-                        @$this->memcache->set($catUid, $cat, 0, $catDur); // we store the catalog.
+                        // the duration of the catalog is 0 (infinite) or the maximum value between the 
+                        // default duration and the duration of the key
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                            ? $duration : $this->catDuration;
+                        $catDuration = ($catDuration !== 0) ? time() + $catDuration : 0; // duration as timestamp
+                        @$this->memcache->set($catUid, $cat, 0, $catDuration); // we store the catalog.
                     }
                 }
                 return $this->memcache->set($uid, $value, 0, $duration);
@@ -489,7 +495,9 @@ class CacheOne
                             }
                         }
                         $cat[$uid] = 1;
-                        apcu_store($catUid, serialize($cat), $this->catDuration);// we store the catalog
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                            ? $duration : $this->catDuration;
+                        apcu_store($catUid, serialize($cat), $catDuration);// we store the catalog
                     }
                 }
                 return apcu_store($uid, serialize($value), $duration);
