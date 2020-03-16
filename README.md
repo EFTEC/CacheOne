@@ -143,6 +143,27 @@ It invalidates (and delete all the redis repository, memcache or apcu)
 $cache->invalidateAll(); 
 ```
 
+## setSerializer($serializer)
+
+It sets how the values are serialized.  By default it's PHP.
+
+```php
+$cache->setSerializer('php'); // set the serializer to php (default value)
+$cache->setSerializer('json-array'); // set the serializer to json-array
+$cache->setSerializer('json-object'); // set the serializer to json-object
+$cache->setSerializer('none'); // set the serializer to none (the value must be serialized)
+ 
+```
+
+## getSerializer();
+
+Get the how the values are serialized.
+
+```php
+$type=$cache->getSerializer(); // get php,json-array,json-object or none
+```
+
+
 
 ## Select a database (Redis)
 
@@ -155,6 +176,10 @@ $cache->select(1);
 ```
 
 # Version
+
+- 2.3
+    * Added method setSerializer() and getSerializer(). By default CacheOne uses PHP for serialization.
+    With this feature, it is possible to serialize using json or none
 - 2.2.2 2020-03-13
     * Now the duration of the catalog is always lasting than the duration of the key
     * Tested the duration and expiration of the cache.

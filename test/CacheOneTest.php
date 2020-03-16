@@ -24,8 +24,9 @@ class PdoOneTest extends TestCase
         $this->assertEquals(false,$cache->enabled);
     }
     
-    private function runMe($type,$schema)  {
+    private function runMe($type,$schema,$serializer='php')  {
         $cache=new CacheOne($type,'127.0.0.1',$schema);
+        $cache->setSerializer($serializer);
         $cache->select(0);
         $cache->invalidateAll();
         
@@ -38,6 +39,10 @@ class PdoOneTest extends TestCase
         $this->assertEquals(true,$cache->set("group","key1","hello world"));
         $this->assertEquals(true,$cache->set("group","key1","hello world"));
 
+        $complex=[['Item1'=>'value1','Item2'=>'value2'],['Item1'=>'value1','Item2'=>'value2']];
+        $complex=[$complex,$complex];
+        $this->assertEquals(true,$cache->set("group","complex",$complex));
+        $this->assertEquals($complex,$cache->get("group","complex"));
         
 
         $this->assertEquals(true,$cache->set("group","key2","hola mundo"));
@@ -84,6 +89,13 @@ class PdoOneTest extends TestCase
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
         
+    }
+    public function test_redis_json()
+    {
+        $type='redis';
+        $this->runMe($type,'unittest','json-array');
+        $this->runDuration($type,'unittest');
+
     }
     public function test_apcu()
     {

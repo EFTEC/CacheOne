@@ -14,7 +14,7 @@ use ReflectionObject;
  * Class CacheOneRedis
  *
  * @package  eftec
- * @version  2.2.2 2020-03-13
+ * @version  2.3 2020-03-16
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -41,6 +41,8 @@ class CacheOne
      */
     var $catDuration = 6048;
     private $separatorUID = ':';
+    /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values  */
+    private $serializer='php';
 
     /**
      * Open the cache
@@ -219,7 +221,7 @@ class CacheOne
                 if ($this->redis !== null) {
                     foreach ($group as $nameGroup) {
                         $guid = $this->genCatId($nameGroup);
-                        $cdumplist = unserialize(@$this->redis->get($guid)); // it reads the catalog
+                        $cdumplist = $this->unserialize(@$this->redis->get($guid)); // it reads the catalog
                         if (is_array($cdumplist)) {
                             $keys = array_keys($cdumplist);
                             foreach ($keys as $key) {
@@ -254,7 +256,7 @@ class CacheOne
 
                     foreach ($group as $nameGroup) {
                         $guid = $this->genCatId($nameGroup);
-                        $cdumplist = unserialize(@apcu_fetch($guid)); // it reads the catalog
+                        $cdumplist = $this->unserialize(@apcu_fetch($guid)); // it reads the catalog
                         if (is_array($cdumplist)) {
                             $keys = array_keys($cdumplist);
 
@@ -341,7 +343,7 @@ class CacheOne
         $uid = $this->genId($group, $key);
         switch ($this->type) {
             case 'redis':
-                $r = unserialize($this->redis->get($uid));
+                $r = $this->unserialize($this->redis->get($uid));
                 return $r === false ? $defaultValue : $r;
             case 'memcache':
                 if ($this->memcache == null) {
@@ -351,7 +353,7 @@ class CacheOne
                 return $v === false ? $defaultValue : $v;
                 break;
             case 'apcu':
-                $r = unserialize(apcu_fetch($uid));
+                $r = $this->unserialize(apcu_fetch($uid));
                 return $r === false ? $defaultValue : $r;
                 break;
             default:
@@ -359,6 +361,52 @@ class CacheOne
                 return $defaultValue;
         }
 
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getSerializer() {
+        return $this->serializer;
+    }
+
+    /**
+     * @param string $serializer=['php','json-array','json-object','none'][$i] By default it uses php.
+     *
+     * @return CacheOne
+     */
+    public function setSerializer($serializer) {
+        $this->serializer = $serializer;
+        return $this;
+    }
+    
+    private function serialize($input) {
+        switch ($this->serializer) {
+            case 'php':
+                return serialize($input);
+            case 'json-array':
+            case 'json-object':
+                return json_encode($input);
+            case 'none':
+                return $input;
+            default:
+                trigger_error("serialize {$this->serializer} not defined");
+        }
+    }
+    private function unserialize($input) {
+        switch ($this->serializer) {
+            case 'php':
+                return unserialize($input);
+            case 'json-array':
+                return json_decode($input,true);
+            case 'json-object':
+                return json_decode($input);
+            case 'none':
+                return $input;                
+            default:
+                trigger_error("serialize {$this->serializer} not defined");
+        }
     }
 
     /**
@@ -427,7 +475,7 @@ class CacheOne
                 if ($groupID !== '') {
                     foreach ($groups as $group) {
                         $catUid = $this->genCatId($group);
-                        $cat = unserialize(@$this->redis->get($catUid));
+                        $cat = $this->unserialize(@$this->redis->get($catUid));
                         if ($cat === false) {
                             $cat = array(); // created a new catalog
                         }
@@ -443,13 +491,13 @@ class CacheOne
                         $cat[$uid] = 1; // we added/updated the catalog
                         $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
                             ? $duration : $this->catDuration;
-                        @$this->redis->set($catUid, serialize($cat), $catDuration); // we store the catalog back.
+                        @$this->redis->set($catUid, $this->serialize($cat), $catDuration); // we store the catalog back.
                     }
                 }
                 if ($duration === 0) {
-                    return $this->redis->set($uid, serialize($value)); // infinite duration
+                    return $this->redis->set($uid, $this->serialize($value)); // infinite duration
                 }
-                return $this->redis->set($uid, serialize($value), $duration);
+                return $this->redis->set($uid, $this->serialize($value), $duration);
             case 'memcache':
                 if ($groupID !== '') {
                     foreach ($groups as $group) {
@@ -481,7 +529,7 @@ class CacheOne
                 if ($groupID !== '') {
                     foreach ($groups as $group) {
                         $catUid = $this->genCatId($group);
-                        $cat = unserialize(@apcu_fetch($catUid));
+                        $cat = $this->unserialize(@apcu_fetch($catUid));
                         if ($cat === false) {
                             $cat = array(); // created a new catalog
                         }
@@ -497,15 +545,16 @@ class CacheOne
                         $cat[$uid] = 1;
                         $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
                             ? $duration : $this->catDuration;
-                        apcu_store($catUid, serialize($cat), $catDuration);// we store the catalog
+                        apcu_store($catUid, $this->serialize($cat), $catDuration);// we store the catalog
                     }
                 }
-                return apcu_store($uid, serialize($value), $duration);
+                return apcu_store($uid, $this->serialize($value), $duration);
             default:
                 trigger_error("CacheOne: type {$this->type} not defined");
                 return false;
         }
     }
+
 
     /**
      * Wrapper of function invalidate()
