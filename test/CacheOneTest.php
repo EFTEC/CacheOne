@@ -22,6 +22,7 @@ class PdoOneTest extends TestCase
         $this->assertEquals(false,$cache->enabled);
         $cache=new CacheOne('redis','127.0.0.1','',11212);
         $this->assertEquals(false,$cache->enabled);
+        $this->assertEquals('php',$cache->getSerializer());
     }
     
     private function runMe($type,$schema,$serializer='php')  {

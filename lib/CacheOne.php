@@ -14,7 +14,7 @@ use ReflectionObject;
  * Class CacheOneRedis
  *
  * @package  eftec
- * @version  2.3 2020-03-16
+ * @version  2.3.1 2020-03-16
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -41,8 +41,8 @@ class CacheOne
      */
     var $catDuration = 6048;
     private $separatorUID = ':';
-    /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values  */
-    private $serializer='php';
+    /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values */
+    private $serializer = 'php';
 
     /**
      * Open the cache
@@ -222,6 +222,7 @@ class CacheOne
                     foreach ($group as $nameGroup) {
                         $guid = $this->genCatId($nameGroup);
                         $cdumplist = $this->unserialize(@$this->redis->get($guid)); // it reads the catalog
+                        $cdumplist = (is_object($cdumplist)) ? (array)$cdumplist : $cdumplist;
                         if (is_array($cdumplist)) {
                             $keys = array_keys($cdumplist);
                             foreach ($keys as $key) {
@@ -257,6 +258,7 @@ class CacheOne
                     foreach ($group as $nameGroup) {
                         $guid = $this->genCatId($nameGroup);
                         $cdumplist = $this->unserialize(@apcu_fetch($guid)); // it reads the catalog
+                        $cdumplist = (is_object($cdumplist)) ? (array)$cdumplist : $cdumplist;
                         if (is_array($cdumplist)) {
                             $keys = array_keys($cdumplist);
 
@@ -279,6 +281,29 @@ class CacheOne
     private function genCatId($group) {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         return $r . $group . $this->cat_postfix;
+    }
+
+    /**
+     * @param             $input
+     * @param null|string $forcedSerializer =[null,'php','json-array','json-object','none'][$i]
+     *
+     * @return mixed
+     */
+    private function unserialize($input, $forcedSerializer = null) {
+        $forcedSerializer = ($forcedSerializer === null) ? $this->serializer : $forcedSerializer;
+        switch ($forcedSerializer) {
+            case 'php':
+                return unserialize($input);
+            case 'json-array':
+                return json_decode($input, true);
+            case 'json-object':
+                return json_decode($input);
+            case 'none':
+                return $input;
+            default:
+                trigger_error("serialize {$this->serializer} not defined");
+                return null;
+        }
     }
 
     /**
@@ -363,52 +388,6 @@ class CacheOne
 
     }
 
-
-    /**
-     * @return string
-     */
-    public function getSerializer() {
-        return $this->serializer;
-    }
-
-    /**
-     * @param string $serializer=['php','json-array','json-object','none'][$i] By default it uses php.
-     *
-     * @return CacheOne
-     */
-    public function setSerializer($serializer) {
-        $this->serializer = $serializer;
-        return $this;
-    }
-    
-    private function serialize($input) {
-        switch ($this->serializer) {
-            case 'php':
-                return serialize($input);
-            case 'json-array':
-            case 'json-object':
-                return json_encode($input);
-            case 'none':
-                return $input;
-            default:
-                trigger_error("serialize {$this->serializer} not defined");
-        }
-    }
-    private function unserialize($input) {
-        switch ($this->serializer) {
-            case 'php':
-                return unserialize($input);
-            case 'json-array':
-                return json_decode($input,true);
-            case 'json-object':
-                return json_decode($input);
-            case 'none':
-                return $input;                
-            default:
-                trigger_error("serialize {$this->serializer} not defined");
-        }
-    }
-
     /**
      * Generates the unique key based in the schema (if any) : group (if any)  key.
      *
@@ -421,6 +400,23 @@ class CacheOne
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         // $r .= ($group) ? $group . $this->separatorUID : '';
         return $r . $key;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSerializer() {
+        return $this->serializer;
+    }
+
+    /**
+     * @param string $serializer =['php','json-array','json-object','none'][$i] By default it uses php.
+     *
+     * @return CacheOne
+     */
+    public function setSerializer($serializer) {
+        $this->serializer = $serializer;
+        return $this;
     }
 
     /**
@@ -476,6 +472,7 @@ class CacheOne
                     foreach ($groups as $group) {
                         $catUid = $this->genCatId($group);
                         $cat = $this->unserialize(@$this->redis->get($catUid));
+                        $cat = (is_object($cat)) ? (array)$cat : $cat;
                         if ($cat === false) {
                             $cat = array(); // created a new catalog
                         }
@@ -530,6 +527,7 @@ class CacheOne
                     foreach ($groups as $group) {
                         $catUid = $this->genCatId($group);
                         $cat = $this->unserialize(@apcu_fetch($catUid));
+                        $cat = (is_object($cat)) ? (array)$cat : $cat;
                         if ($cat === false) {
                             $cat = array(); // created a new catalog
                         }
@@ -555,6 +553,25 @@ class CacheOne
         }
     }
 
+    /**
+     * @param $input
+     *
+     * @return false|string
+     */
+    private function serialize($input) {
+        switch ($this->serializer) {
+            case 'php':
+                return serialize($input);
+            case 'json-array':
+            case 'json-object':
+                return json_encode($input);
+            case 'none':
+                return $input;
+            default:
+                trigger_error("serialize {$this->serializer} not defined");
+                return '';
+        }
+    }
 
     /**
      * Wrapper of function invalidate()

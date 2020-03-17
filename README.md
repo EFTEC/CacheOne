@@ -177,6 +177,8 @@ $cache->select(1);
 
 # Version
 
+- 2.3.1
+    * fix: The catalog is always stored as an array, even if the serializer is json-object
 - 2.3
     * Added method setSerializer() and getSerializer(). By default CacheOne uses PHP for serialization.
     With this feature, it is possible to serialize using json or none
