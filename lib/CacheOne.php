@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpUnusedParameterInspection */
+<?php /** @noinspection ReturnTypeCanBeDeclaredInspection */
+/** @noinspection PhpMissingParamTypeInspection */
+/** @noinspection PhpUnusedParameterInspection */
 
 /** @noinspection PhpComposerExtensionStubsInspection */
 
@@ -14,7 +16,7 @@ use ReflectionObject;
  * Class CacheOneRedis
  *
  * @package  eftec
- * @version  2.3.1 2020-03-16
+ * @version  2.4 2020-09-13
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -22,24 +24,24 @@ use ReflectionObject;
 class CacheOne
 {
     /** @var string=['redis','memcache','apcu'][$i] */
-    var $type;
+    public $type;
 
     /** @var bool if the cache is up */
-    var $enabled;
+    public $enabled;
 
     /** @var Redis */
-    var $redis;
+    public $redis;
     /** @var Memcache */
-    var $memcache;
+    public $memcache;
     /** @var string */
-    var $schema = '';
+    public $schema = '';
     /** @var string The postfix of the catalog of the group */
-    var $cat_postfix = '_cat';
+    public $cat_postfix = '_cat';
     /**
      * @var int The duration of the catalog in seconds<br>
      * The default value is 7 days. The limit is 30 days (memcache limit). 0 = never expires.
      */
-    var $catDuration = 6048;
+    public $catDuration = 6048;
     private $separatorUID = ':';
     /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values */
     private $serializer = 'php';
@@ -59,21 +61,24 @@ class CacheOne
      */
     public function __construct(
         $type = 'auto',
-        $server = '127.0.0.1', $schema = "", $port = 0
-        , $user = "", $password = "", $timeout = 8, $retry = null, $readTimeout = null
+        $server = '127.0.0.1',
+        $schema = "",
+        $port = 0
+        ,
+        $user = "",
+        $password = "",
+        $timeout = 8,
+        $retry = null,
+        $readTimeout = null
     ) {
         $this->type = $type;
-        if ($type == 'auto') {
+        if ($type === 'auto') {
             if (class_exists("Redis")) {
                 $this->type = 'redis';
-            } else {
-                if (class_exists("Memcache")) {
-                    $this->type = 'memcache';
-                } else {
-                    if (extension_loaded('apcu')) {
-                        $this->type = 'apcu';
-                    }
-                }
+            } elseif (class_exists("Memcache")) {
+                $this->type = 'memcache';
+            } elseif (extension_loaded('apcu')) {
+                $this->type = 'apcu';
             }
         }
         switch ($this->type) {
@@ -92,19 +97,18 @@ class CacheOne
                         $this->redis = null;
                         $this->enabled = false;
                         return;
-                    } else {
-                        $this->schema = $schema;
-                        $this->enabled = true;
-                        return;
                     }
-                } else {
-                    $this->redis = null;
-                    $this->enabled = false;
-                    trigger_error('CacheOne: Redis extension not installed');
+
+                    $this->schema = $schema;
+                    $this->enabled = true;
+                    return;
                 }
 
+                $this->redis = null;
+                $this->enabled = false;
+                trigger_error('CacheOne: Redis extension not installed');
+
                 return;
-                break;
             case 'memcache':
                 $this->separatorUID = '_';
                 if (class_exists("Memcache")) {
@@ -125,7 +129,6 @@ class CacheOne
                     trigger_error('CacheOne: memcache extension not installed');
                 }
                 return;
-                break;
             case 'apcu':
                 if (extension_loaded('apcu')) {
                     $r = @apcu_sma_info();
@@ -136,10 +139,8 @@ class CacheOne
                     trigger_error('CacheOne: apcu extension not installed');
                 }
                 return;
-                break;
             default:
                 trigger_error("CacheOne: type {$this->type} not defined");
-                return;
         }
     }
 
@@ -153,7 +154,8 @@ class CacheOne
      * @return void
      * @throws Exception
      */
-    public static function fixCast(&$destination, $source) {
+    public static function fixCast(&$destination, $source)
+    {
         if (is_array($source)) {
             if (count($destination) === 0) {
                 return;
@@ -172,7 +174,7 @@ class CacheOne
             foreach ($sourceProperties as $sourceProperty) {
                 $name = $sourceProperty->getName();
                 if (is_object(@$destination->{$name})) {
-                    if (get_class(@$destination->{$name}) == "DateTime") {
+                    if (get_class(@$destination->{$name}) === "DateTime") {
                         // source->name is a stdclass, not a DateTime, so we could read the value with the field date
                         /** @noinspection PhpUnhandledExceptionInspection */
                         $destination->{$name} = new DateTime($source->$name->date);
@@ -193,7 +195,8 @@ class CacheOne
      *
      * @see https://redis.io/commands/select
      */
-    function select($dbindex) {
+    public function select($dbindex)
+    {
         if ($this->redis) {
             $this->redis->select($dbindex);
         }
@@ -202,7 +205,7 @@ class CacheOne
     /**
      * It invalidates all the keys inside a group or groups.<br>
      * <pre>
-     * $this->invalidateGroup('customer);
+     * $this->invalidateGroup('customer');
      * </pre>
      * <b>Note:</b> if a key is member of more than one group, then it is invalidated for all groups.<br>
      * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a cache)<br>
@@ -211,7 +214,8 @@ class CacheOne
      *
      * @return bool Returns true if it deleted more than one key or false if error or no key deleted.
      */
-    function invalidateGroup($group): bool {
+    public function invalidateGroup($group): bool
+    {
         if (!is_array($group)) {
             $group = [$group];
         }
@@ -250,11 +254,9 @@ class CacheOne
                     }
                 }
                 return $count > 0;
-                break;
             case 'apcu':
                 $count = 0;
                 if ($this->enabled) {
-
                     foreach ($group as $nameGroup) {
                         $guid = $this->genCatId($nameGroup);
                         $cdumplist = $this->unserialize(@apcu_fetch($guid)); // it reads the catalog
@@ -271,14 +273,14 @@ class CacheOne
                     }
                 }
                 return $count > 0;
-                break;
             default:
                 trigger_error("CacheOne: type {$this->type} not defined");
                 return false;
         }
     }
 
-    private function genCatId($group) {
+    private function genCatId($group)
+    {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         return $r . $group . $this->cat_postfix;
     }
@@ -289,15 +291,17 @@ class CacheOne
      *
      * @return mixed
      */
-    private function unserialize($input, $forcedSerializer = null) {
-        $forcedSerializer = ($forcedSerializer === null) ? $this->serializer : $forcedSerializer;
+    private function unserialize($input, $forcedSerializer = null)
+    {
+        $forcedSerializer = $forcedSerializer ?? $this->serializer;
         switch ($forcedSerializer) {
             case 'php':
+                /** @noinspection UnserializeExploitsInspection */
                 return unserialize($input);
             case 'json-array':
                 return json_decode($input, true);
             case 'json-object':
-                return json_decode($input);
+                return json_decode($input, false);
             case 'none':
                 return $input;
             default:
@@ -314,16 +318,16 @@ class CacheOne
      *
      * @return bool true if the operation is correct, otherwise false.
      */
-    public function invalidateAll() {
+    public function invalidateAll()
+    {
         switch ($this->type) {
             case 'redis':
-                if ($this->redis == null) {
+                if ($this->redis === null) {
                     return false;
                 }
                 return $this->redis->flushDB();
             case 'memcache':
                 return @$this->memcache->flush();
-                break;
             case 'apcu':
                 return apcu_clear_cache();
             default:
@@ -341,7 +345,8 @@ class CacheOne
      * @return mixed
      * @see \eftec\CacheOne::get
      */
-    public function getCache($uid, $family = '') {
+    public function getCache($uid, $family = '')
+    {
         return $this->get($family, $uid);
     }
 
@@ -361,7 +366,8 @@ class CacheOne
      *
      * @return mixed returns false if the value is not found, otherwise it returns the value.
      */
-    function get($group, $key, $defaultValue = false) {
+    public function get($group, $key, $defaultValue = false)
+    {
         if (!$this->enabled) {
             return $defaultValue;
         }
@@ -371,16 +377,14 @@ class CacheOne
                 $r = $this->unserialize($this->redis->get($uid));
                 return $r === false ? $defaultValue : $r;
             case 'memcache':
-                if ($this->memcache == null) {
+                if ($this->memcache === null) {
                     return false;
                 }
                 $v = $this->memcache->get($uid);
                 return $v === false ? $defaultValue : $v;
-                break;
             case 'apcu':
                 $r = $this->unserialize(apcu_fetch($uid));
                 return $r === false ? $defaultValue : $r;
-                break;
             default:
                 trigger_error("CacheOne: type {$this->type} not defined");
                 return $defaultValue;
@@ -396,7 +400,8 @@ class CacheOne
      *
      * @return string
      */
-    private function genId($group, $key) {
+    private function genId($group, $key)
+    {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         // $r .= ($group) ? $group . $this->separatorUID : '';
         return $r . $key;
@@ -405,7 +410,8 @@ class CacheOne
     /**
      * @return string
      */
-    public function getSerializer() {
+    public function getSerializer()
+    {
         return $this->serializer;
     }
 
@@ -414,7 +420,8 @@ class CacheOne
      *
      * @return CacheOne
      */
-    public function setSerializer($serializer) {
+    public function setSerializer($serializer)
+    {
         $this->serializer = $serializer;
         return $this;
     }
@@ -430,7 +437,8 @@ class CacheOne
      * @return bool
      * @see \eftec\CacheOne::set
      */
-    public function setCache($uid, $family = '', $data = null, $ttl = null) {
+    public function setCache($uid, $family = '', $data = null, $ttl = null)
+    {
         return $this->set($family, $uid, $data, $ttl);
     }
 
@@ -454,7 +462,8 @@ class CacheOne
      *
      * @return bool
      */
-    function set($groups, $key, $value, $duration = 1440): bool {
+    public function set($groups, $key, $value, $duration = 1440): bool
+    {
         if (!$this->enabled) {
             return false;
         }
@@ -479,14 +488,14 @@ class CacheOne
                         if (time() % 100 === 0) {
                             // garbage collector of the catalog. We run it around every 20th reads.
                             $keys = array_keys($cat);
-                            foreach ($keys as $key) {
-                                if (!$this->redis->exists($key)) {
-                                    unset($cat[$key]);
+                            foreach ($keys as $keyf) {
+                                if (!$this->redis->exists($keyf)) {
+                                    unset($cat[$keyf]);
                                 }
                             }
                         }
                         $cat[$uid] = 1; // we added/updated the catalog
-                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration !== 0)
                             ? $duration : $this->catDuration;
                         @$this->redis->set($catUid, $this->serialize($cat), $catDuration); // we store the catalog back.
                     }
@@ -506,16 +515,16 @@ class CacheOne
                         if (time() % 100 === 0) {
                             // garbage collector of the catalog. We run it around every 20th reads.
                             $keys = array_keys($cat);
-                            foreach ($keys as $key) {
-                                if ($this->memcache->get($key) === false) {
-                                    unset($cat[$key]);
+                            foreach ($keys as $keyf) {
+                                if ($this->memcache->get($keyf) === false) {
+                                    unset($cat[$keyf]);
                                 }
                             }
                         }
                         $cat[$uid] = 1;
                         // the duration of the catalog is 0 (infinite) or the maximum value between the 
                         // default duration and the duration of the key
-                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration !== 0)
                             ? $duration : $this->catDuration;
                         $catDuration = ($catDuration !== 0) ? time() + $catDuration : 0; // duration as timestamp
                         @$this->memcache->set($catUid, $cat, 0, $catDuration); // we store the catalog.
@@ -534,14 +543,14 @@ class CacheOne
                         if (time() % 100 === 0) {
                             // garbage collector of the catalog. We run it around every 20th reads.
                             $keys = array_keys($cat);
-                            foreach ($keys as $key) {
-                                if (!apcu_exists($key)) {
-                                    unset($cat[$key]);
+                            foreach ($keys as $keyf) {
+                                if (!apcu_exists($keyf)) {
+                                    unset($cat[$keyf]);
                                 }
                             }
                         }
                         $cat[$uid] = 1;
-                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration != 0)
+                        $catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration !== 0)
                             ? $duration : $this->catDuration;
                         apcu_store($catUid, $this->serialize($cat), $catDuration);// we store the catalog
                     }
@@ -558,7 +567,8 @@ class CacheOne
      *
      * @return false|string
      */
-    private function serialize($input) {
+    private function serialize($input)
+    {
         switch ($this->serializer) {
             case 'php':
                 return serialize($input);
@@ -583,7 +593,8 @@ class CacheOne
      * @see \eftec\CacheOne::invalidate
      *
      */
-    public function invalidateCache($uid = '', $family = '') {
+    public function invalidateCache($uid = '', $family = '')
+    {
         return $this->invalidate($family, $uid);
 
     }
@@ -602,18 +613,18 @@ class CacheOne
      *
      * @return bool
      */
-    function invalidate($group = '', $key = ''): bool {
+    public function invalidate($group = '', $key = ''): bool
+    {
         $uid = $this->genId($group, $key);
         switch ($this->type) {
             case 'redis':
-                if ($this->redis == null) {
+                if ($this->redis === null) {
                     return false;
                 }
                 $num = $this->redis->del($uid);
                 return ($num > 0);
             case 'memcache':
                 return @$this->memcache->delete($uid);
-                break;
             case 'apcu':
                 return apcu_delete($uid);
             default:

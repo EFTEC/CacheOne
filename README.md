@@ -117,8 +117,8 @@ $result=$cache->get("","key2","not found"); // if not key2 (groupless) then it r
 It invalidates a specific key. If the operation fails, then it returns false
 
 ```php
-$cache->invalidate("group",key1"); // invalidate a key inside a group
-$cache->invalidate("",key1"); // invalidate a key without a group.
+$cache->invalidate("group","key1"); // invalidate a key inside a group
+$cache->invalidate("","key1"); // invalidate a key without a group.
 ```
 
 
@@ -177,6 +177,8 @@ $cache->select(1);
 
 # Version
 
+- 2.4 2020-09-13
+    * The code was refactored.   
 - 2.3.1
     * fix: The catalog is always stored as an array, even if the serializer is json-object
 - 2.3
