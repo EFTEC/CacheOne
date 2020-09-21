@@ -1,12 +1,13 @@
 {
   "name": "eftec/cacheone",
   "description": "Cache class in a single Class",
-  "version": "2.4",
+  "version": "2.5",
   "type": "library",
   "keywords": [
     "redis",
     "php",
-    "cache"
+    "cache",
+    "file system"
   ],
   "homepage": "https://github.com/EFTEC/CacheOne",
   "authors": [
@@ -19,14 +20,17 @@
   "license": "MIT",
   "require": {
     "php": "^7.0"
+
   },
   "require-dev": {
-    "phpunit/phpunit": "^5.7 || ^6.5"
+    "phpunit/phpunit": "^5.7 || ^6.5",
+    "eftec/documentstoreone": "^1.16.2"
   },
   "suggest": {
     "ext-apcu": "CacheOneApcu requires it",
     "ext-redis": "CacheOneRedis requires it",
-    "ext-memcache": "CacheOneMemcached requires it"
+    "ext-memcache": "CacheOneMemcached requires it",
+    "eftec/documentstoreone": "CacheOneDocumentStoreOne requires it"
   },
   "autoload": {
     "psr-4": {

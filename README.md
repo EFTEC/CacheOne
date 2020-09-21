@@ -75,7 +75,15 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("memcache","127.0.0.1");
 ```
 
-or creating a new connection, or redis, or memcache or apcu (it takes the first available)
+Creates a new connection using documentone (file system)
+
+```php
+use eftec\CacheOne;
+include "../vendor/autoload.php";
+$cache=new CacheOne("documentone",__DIR__."/base","schema"); // folder /base/schema must exists
+```
+
+or creating a new connection, or redis, or memcache or apcu or documentone (it takes the first available)
 
 ```php
 use eftec\CacheOne;
@@ -88,8 +96,10 @@ $cache=new CacheOne("auto");
 
 > function set($group, $key, $value, $duration = 1440): bool
 
-It store a value inside a group and a key.
+It stores a value inside a group and a key.
 It returns false if the operation failed.
+
+> Note: The duration is ignored by "documentone"
 
 ```php
 $cache->set("group","key1","hello world",500);
@@ -109,6 +119,14 @@ $result=$cache->get("group","key1");
 $result=$cache->get("","key2");
 $result=$cache->get("","key2","not found"); // if not key2 (groupless) then it returns not found 
 ```
+## setDefaultTTL
+
+```php
+$result=$cache->setDefaultTTL(50); // it sets the default time to live. "documentone" one uses it.
+$result=$cache->getDefaultTTL(50); // it gets the time to live
+```
+
+
 
 ## invalidate a key
 
@@ -177,6 +195,9 @@ $cache->select(1);
 
 # Version
 
+      
+- 2.5 2020-09-20
+    * Separated provider in different classes. Now it also allows to use the file system (documentone).   
 - 2.4 2020-09-13
     * The code was refactored.   
 - 2.3.1

@@ -25,8 +25,8 @@ class PdoOneTest extends TestCase
         $this->assertEquals('php',$cache->getSerializer());
     }
     
-    private function runMe($type,$schema,$serializer='php')  {
-        $cache=new CacheOne($type,'127.0.0.1',$schema);
+    private function runMe($type,$schema,$serializer='php',$server='127.0.0.1')  {
+        $cache=new CacheOne($type,$server,$schema);
         $cache->setSerializer($serializer);
         $cache->select(0);
         $cache->invalidateAll();
@@ -105,8 +105,17 @@ class PdoOneTest extends TestCase
         $type='apcu';
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
-
     }
+
+    public function test_document()
+    {
+        // if not, then test fails because it considers the timestamp of execution of php
+        ini_set("apc.use_request_time", 0);
+        $type='documentone';
+        $this->runMe($type,'unittest','php',__DIR__.'/mem');
+        $this->runDuration($type,'unittest',__DIR__.'/mem');
+    }
+    
     public function test_auto()
     {
         $this->runMe('auto','unittest');
@@ -118,8 +127,9 @@ class PdoOneTest extends TestCase
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
     }
-    public function runDuration($type,$schema) {
-        $cache=new CacheOne($type,'127.0.0.1',$schema);
+    public function runDuration($type,$schema,$server='127.0.0.1') {
+        $cache=new CacheOne($type,$server,$schema);
+        $cache->setDefaultTTL(1);
         $cache->select(0);
         $cache->invalidateAll();
         $cache->set('group','key','hello world',1);
