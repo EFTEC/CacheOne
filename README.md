@@ -77,11 +77,17 @@ $cache=new CacheOne("memcache","127.0.0.1");
 
 Creates a new connection using documentone (file system)
 
+This example requires the library **eftec/documentstoreone**
+
 ```php
 use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("documentone",__DIR__."/base","schema"); // folder /base/schema must exists
 ```
+
+The library DocumentStoreOne works with concurrency.
+
+
 
 or creating a new connection, or redis, or memcache or apcu or documentone (it takes the first available)
 
