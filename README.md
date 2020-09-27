@@ -129,7 +129,7 @@ $result=$cache->get("","key2","not found"); // if not key2 (groupless) then it r
 
 ```php
 $result=$cache->setDefaultTTL(50); // it sets the default time to live. "documentone" one uses it.
-$result=$cache->getDefaultTTL(50); // it gets the time to live
+$result=$cache->getDefaultTTL();   // it gets the time to live
 ```
 
 
