@@ -270,7 +270,8 @@ $cache->select(1);
 
 # Version
 
-
+- 2.6.1 2021-06-12
+  * changed dependencies in composer.json
 - 2.6 2021-06-12
     
     - added the methods push(), pop(), shift() and unshift()
