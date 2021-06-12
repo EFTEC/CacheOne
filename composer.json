@@ -1,7 +1,6 @@
 {
   "name": "eftec/cacheone",
   "description": "Cache class in a single Class",
-  "version": "2.5",
   "type": "library",
   "keywords": [
     "redis",
