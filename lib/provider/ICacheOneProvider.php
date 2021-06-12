@@ -1,4 +1,6 @@
-<?php
+<?php /** @noinspection PhpMissingReturnTypeInspection */
+
+/** @noinspection PhpMissingParamTypeInspection */
 
 namespace eftec\provider;
 
@@ -10,13 +12,17 @@ namespace eftec\provider;
  */
 interface ICacheOneProvider
 {
+    /**
+     * @param array $group
+     * @return boolean
+     */
     public function invalidateGroup($group);
 
     public function invalidateAll();
 
     public function get($group, $key, $defaultValue = false);
 
-    public function set($groupID, $uid, $groups, $key, $value, $duration = 1440);
+    public function set($uid, $groups, $key, $value, $duration = 1440);
 
     public function invalidate($group = '', $key = '');
 

@@ -1,4 +1,5 @@
-<?php /** @noinspection ReturnTypeCanBeDeclaredInspection */
+<?php /** @noinspection PhpMissingReturnTypeInspection */
+/** @noinspection ReturnTypeCanBeDeclaredInspection */
 
 /** @noinspection PhpComposerExtensionStubsInspection */
 
@@ -10,7 +11,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
 {
 
     /** @var null|CacheOne */
-    private $parent = null;
+    private $parent;
     
 
     /**
@@ -29,6 +30,10 @@ class CacheOneProviderAPCU implements ICacheOneProvider
         $this->parent->schema = $schema;
     }
 
+    /**
+     * @param array $group
+     * @return bool
+     */
     public function invalidateGroup($group)
     {
         $count = 0;
@@ -58,13 +63,19 @@ class CacheOneProviderAPCU implements ICacheOneProvider
 
     public function get($group, $key, $defaultValue = false)
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize(apcu_fetch($uid));
         return $r === false ? $defaultValue : $r;
     }
 
-    public function set($groupID, $uid, $groups, $key, $value, $duration = 1440)
+    public function set($uid, $groups, $key, $value, $duration = 1440)
     {
+        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
+        if (count($groups) === 0) {
+            trigger_error('[CacheOne]: set group must contains at least one element');
+            return false;
+        }
+        $groupID = $groups[0]; // first group
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
@@ -93,7 +104,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
 
     public function invalidate($group = '', $key = '')
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         return apcu_delete($uid);
     }
 

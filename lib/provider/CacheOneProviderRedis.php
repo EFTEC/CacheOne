@@ -8,14 +8,13 @@ namespace eftec\provider;
 use eftec\CacheOne;
 use Exception;
 use Redis;
-use RuntimeException;
 
 class CacheOneProviderRedis implements ICacheOneProvider
 {
-    /** @var null|\Redis */
-    private $redis = null;
+    /** @var null|Redis */
+    private $redis;
     /** @var null|CacheOne */
-    private $parent = null;
+    private $parent;
 
     /**
      * AbstractCacheOneRedis constructor.
@@ -88,13 +87,19 @@ class CacheOneProviderRedis implements ICacheOneProvider
 
     public function get($group, $key, $defaultValue = false)
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize($this->redis->get($uid));
         return $r === false ? $defaultValue : $r;
     }
 
-    public function set($groupID, $uid, $groups, $key, $value, $duration = 1440)
+    public function set($uid, $groups, $key, $value, $duration = 1440)
     {
+        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
+        if (count($groups) === 0) {
+            trigger_error('[CacheOne]: set group must contains at least one element');
+            return false;
+        }
+        $groupID = $groups[0]; // first group
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
@@ -127,7 +132,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
 
     public function invalidate($group = '', $key = '')
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         if ($this->redis === null) {
             return false;
         }

@@ -13,16 +13,49 @@ use eftec\CacheOne;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
-class PdoOneTest extends TestCase
+class CacheOneTest extends TestCase
 {
 	/** @var CacheOne */
     protected $cacheOne;
     public function test_noconnect() {
         $cache=new CacheOne('memcache','127.0.0.1','',11212);
-        $this->assertEquals(false,$cache->enabled);
+
+        self::assertEquals(false,$cache->enabled);
         $cache=new CacheOne('redis','127.0.0.1','',11212);
-        $this->assertEquals(false,$cache->enabled);
-        $this->assertEquals('php',$cache->getSerializer());
+        self::assertEquals(false,$cache->enabled);
+        self::assertEquals('php',$cache->getSerializer());
+    }
+    public function test_push() {
+        $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
+
+        self::assertEquals(true,$cache->set('','item',[1,2,3],123));
+        // popold
+        self::assertEquals(true,$cache->push('','item',4,null,5));
+        self::assertEquals(true,$cache->push('','item',5,null,5));
+        self::assertEquals(true,$cache->push('','item',6,null,5));
+        self::assertEquals([2,3,4,5,6],$cache->get('','item'));
+        self::assertEquals(true,$cache->push('','item',7,null,5,'nonew'));
+        self::assertEquals([2,3,4,5,6],$cache->get('','item'));
+
+        self::assertEquals(6,$cache->pop('','item'));
+        self::assertEquals([2,3,4,5],$cache->get('','item'));
+        self::assertEquals(2,$cache->shift('','item'));
+        self::assertEquals([3,4,5],$cache->get('','item'));
+        self::assertEquals(true,$cache->unshift('','item',2));
+        self::assertEquals([2,3,4,5],$cache->get('','item'));
+        self::assertEquals(true,$cache->unshift('','item',1));
+        self::assertEquals([1,2,3,4,5],$cache->get('','item'));
+        self::assertEquals(true,$cache->unshift('','item',10,null,5));
+        self::assertEquals([10,1,2,3,4],$cache->get('','item'));
+        self::assertEquals(true,$cache->unshift('','item',20,null,5,'shiftold'));
+        self::assertEquals([20,1,2,3,4],$cache->get('','item'));
+        self::assertEquals(4,$cache->pop('','item'));
+        self::assertEquals(3,$cache->pop('','item'));
+        self::assertEquals(2,$cache->pop('','item'));
+        self::assertEquals(1,$cache->pop('','item'));
+        self::assertEquals(20,$cache->pop('','item'));
+        self::assertEquals(null,$cache->pop('','item'));
+
     }
     
     private function runMe($type,$schema,$serializer='php',$server='127.0.0.1')  {
@@ -32,42 +65,42 @@ class PdoOneTest extends TestCase
         $cache->invalidateAll();
         
         // wrapper test
-        $this->assertEquals(true,$cache->setCache("key1","family","hello world"));
-        $this->assertEquals("hello world",$cache->getCache("key1","family"));
-        $this->assertEquals(true,$cache->invalidateCache("key1","family"));
-        $this->assertEquals(false,$cache->getCache("key1","family"));
+        self::assertEquals(true,$cache->setCache("key1","family","hello world"));
+        self::assertEquals("hello world",$cache->getCache("key1","family"));
+        self::assertEquals(true,$cache->invalidateCache("key1","family"));
+        self::assertEquals(false,$cache->getCache("key1","family"));
         
-        $this->assertEquals(true,$cache->set("group","key1","hello world"));
-        $this->assertEquals(true,$cache->set("group","key1","hello world"));
+        self::assertEquals(true,$cache->set("group","key1","hello world"));
+        self::assertEquals(true,$cache->set("group","key1","hello world"));
 
         $complex=[['Item1'=>'value1','Item2'=>'value2'],['Item1'=>'value1','Item2'=>'value2']];
         $complex=[$complex,$complex];
-        $this->assertEquals(true,$cache->set("group","complex",$complex));
-        $this->assertEquals($complex,$cache->get("group","complex"));
+        self::assertEquals(true,$cache->set("group","complex",$complex));
+        self::assertEquals($complex,$cache->get("group","complex"));
         
 
-        $this->assertEquals(true,$cache->set("group","key2","hola mundo"));
-        $this->assertEquals('hello world',$cache->get("group","key1"));
+        self::assertEquals(true,$cache->set("group","key2","hola mundo"));
+        self::assertEquals('hello world',$cache->get("group","key1"));
         $cache->invalidate("group","key1");
-        $this->assertEquals(false,$cache->get("group","key1"));
+        self::assertEquals(false,$cache->get("group","key1"));
         $cache->invalidateGroup("group");
-        $this->assertEquals(false,$cache->get("group","key2"));
+        self::assertEquals(false,$cache->get("group","key2"));
         $cache->set("group1","key1","hello world");
         $cache->set("group2","key2","hola mundo");
-        $this->assertEquals('hello world',$cache->get("group1","key1"));
-        $this->assertEquals('hola mundo',$cache->get("group2","key2"));
+        self::assertEquals('hello world',$cache->get("group1","key1"));
+        self::assertEquals('hola mundo',$cache->get("group2","key2"));
         $cache->invalidateGroup(["group1","group2"]);
-        $this->assertEquals(false,$cache->get("group1","key1"));
-        $this->assertEquals(false,$cache->get("group2","key2"));
+        self::assertEquals(false,$cache->get("group1","key1"));
+        self::assertEquals(false,$cache->get("group2","key2"));
         $cache->set(["group1","group2"],"key1","hello world"); // a key with 2 group
-        $this->assertEquals('hello world',$cache->get("group1","key1"));
+        self::assertEquals('hello world',$cache->get("group1","key1"));
         $cache->invalidateGroup(["group2"]);
-        $this->assertEquals(false,$cache->get("group1","key1"));
+        self::assertEquals(false,$cache->get("group1","key1"));
         // we left some traceover
-        $this->assertEquals(true,$cache->set("group","key1","hello world"));
-        $this->assertEquals(true,$cache->set("group","key2","hello world"));
-        $this->assertEquals(true,$cache->set("group","key3","hello world"));
-        $this->assertEquals(true,$cache->set("group","key4","hello world"));
+        self::assertEquals(true,$cache->set("group","key1","hello world"));
+        self::assertEquals(true,$cache->set("group","key2","hello world"));
+        self::assertEquals(true,$cache->set("group","key3","hello world"));
+        self::assertEquals(true,$cache->set("group","key4","hello world"));
 
     }
     public function test_cast() {
@@ -78,10 +111,10 @@ class PdoOneTest extends TestCase
         $compare=new stdClass();
         $compare->field=20;
         CacheOne::fixCast($origin,$template);
-        $this->assertEquals($compare,$origin);
+        self::assertEquals($compare,$origin);
         $originArray=[$origin,$origin];
         CacheOne::fixCast($originArray,[$template,$template]);
-        $this->assertEquals($compare,$origin);
+        self::assertEquals($compare,$origin);
     }
 
     public function test_redis()
@@ -133,9 +166,9 @@ class PdoOneTest extends TestCase
         $cache->select(0);
         $cache->invalidateAll();
         $cache->set('group','key','hello world',1);
-        $this->assertEquals('hello world',$cache->get('group','key'));
+        self::assertEquals('hello world',$cache->get('group','key'));
         sleep(2); // expires
-        $this->assertEquals(false,$cache->get('group','key'));
+        self::assertEquals(false,$cache->get('group','key'));
         
         
         $cache->invalidateAll();
@@ -145,9 +178,9 @@ class PdoOneTest extends TestCase
         $cache->catDuration=1; // the catalog expires in 1 second
         sleep(2); // not enough time to expire
         $cache->invalidateGroup('group'); // the catalog must be alive to expire all the keys
-        $this->assertEquals(false,$cache->get('group','key1'));
-        $this->assertEquals(false,$cache->get('group','key2'));
-        $this->assertEquals(false,$cache->get('group','key3'));
+        self::assertEquals(false,$cache->get('group','key1'));
+        self::assertEquals(false,$cache->get('group','key2'));
+        self::assertEquals(false,$cache->get('group','key3'));
 
         
         

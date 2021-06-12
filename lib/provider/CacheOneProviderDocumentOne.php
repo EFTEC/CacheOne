@@ -12,7 +12,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
     /** @var DocumentStoreOne */
     private $documentOne;
     /** @var null|CacheOne */
-    private $parent = null;
+    private $parent;
 
     /**
      * CacheOneProviderDocumentOne constructor.
@@ -25,9 +25,9 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
     {
         $this->parent = $parent;
 
-        $this->documentOne=new \eftec\DocumentStoreOne\DocumentStoreOne($server,$schema);
+        $this->documentOne=new DocumentStoreOne($server,$schema);
         $this->parent->enabled=true;
-        $this->documentOne->autoSerialize(true,'php');
+        $this->documentOne->autoSerialize(true);
         
     }
 
@@ -63,7 +63,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     public function get($group, $key, $defaultValue = false)
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         $age=$this->documentOne->getTimeStamp($uid,true);
         $defaultTTL=$this->parent->getDefaultTTL();
         if($age>$defaultTTL && $defaultTTL!==0) {
@@ -74,8 +74,13 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         return $this->documentOne->get($uid);
     }
 
-    public function set($groupID, $uid, $groups, $key, $value, $duration = 1440)
+    public function set($uid, $groups, $key, $value, $duration = 1440)
     {
+        if (count($groups) === 0) {
+            trigger_error('[CacheOne]: set group must contains at least one element');
+            return false;
+        }
+        $groupID = $groups[0]; // first group
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
@@ -108,7 +113,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     public function invalidate($group = '', $key = '')
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         return @$this->documentOne->delete($uid);
     }
 

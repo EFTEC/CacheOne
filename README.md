@@ -76,7 +76,7 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("memcache","127.0.0.1");
 ```
 
-Creates a new connection using documentone (file system)
+Creates a new connection using the class **DocumentOne** (file system)
 
 This example requires the library **eftec/documentstoreone**
 
@@ -86,7 +86,7 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("documentone",__DIR__."/base","schema"); // folder /base/schema must exists
 ```
 
-The library DocumentStoreOne works with concurrency.
+The library **DocumentStoreOne** works with concurrency.
 
 
 
@@ -131,6 +131,74 @@ $result=$cache->get("","key2","not found"); // if not key2 (groupless) then it r
 ```php
 $result=$cache->setDefaultTTL(50); // it sets the default time to live. "documentone" one uses it.
 $result=$cache->getDefaultTTL();   // it gets the time to live
+```
+
+## Pushing and Popping values form an array
+
+### push
+
+It pushes (adds) a new value at the **end of the array**.  If the array does not exist, then it is created a new array. This command allows to limit the numbers of elements of the array.
+
+Syntax:
+> push($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'shiftold') : bool
+
+* **$Limit** is used to limit the number maximum of elements of the array, if zero, then it does not limit the elements.
+* **$LimitStrategy** is used to determine what to do when we are adding a new element and the limit has been reached, 
+**shiftold** removes the first element of the array, **nonew** does not allow to add a new element, **popold** removes the latest element of the array
+  (if the limit has been reached).
+
+```php
+// cart could be [1,2,3]
+$cache->push('','cart',4,2000); // it adds a new element into the cart unlimitely cart is [1,2,3,4]
+$cache->push('','cart',5,2000,4,'shiftold'); // it limits the cart to 20 elements, pop old item if req. cart is [2,3,4,5]
+$cache->push('','cart',6,2000,4,'nonew'); // if the cart has 20 elements, then it doesn't add $item. cart now is [2,3,4,5]
+```
+
+### unshift
+
+It unshift (add) a new value at the **beginner of the array**.  If the array does not exist, then it is created a new array. This command allows to limit the numbers of elements of the array.
+
+Syntax:
+
+> unshift($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'popold') : bool
+
+* **$Limit** is used to limit the number maximum of elements of the array, if zero, then it does not limit the elements.
+* **$LimitStrategy** is used to determine what to do when we are adding a new element and the limit has been reached, **shiftold** removes the first element of the array, **nonew** does not allow to add a new element, **popold** removes the latest element of the array
+  (if the limit has been reached).
+
+```php
+// cart could be [1,2,3]
+$cache->unshift('','cart',4,2000); // it adds a new element into the cart unlimitely cart is [4,1,2,3]
+$cache->unshift('','cart',5,2000,4,'shiftold'); // it limits the cart to 20 elements, pop old item if req. cart is [2,3,4,5]
+$cache->unshift('','cart',6,2000,4,'nonew'); // if the cart has 20 elements, then it doesn't add $item. cart now is [2,3,4,5]
+```
+
+
+
+### pop
+
+It pops (extract) a value at the **end of the array**. It the value does not exists then it returns **$defaultValue** The original array is modified removing the last element of the array.
+
+Syntax:
+
+>  pop($group, $key, $defaultValue = false, $duration = null) : mixed
+
+```php
+// cart could be [1,2,3,4];
+$element=$this->pop('','cart'); // now cart is [1,2,3] and $element is 4
+```
+
+### shift
+
+It shift (extract) a value at the **beginner of the array**. It the value does not exists then it returns **$defaultValue** The original array is modified removing the last element of the array.
+
+Syntax:
+
+>  pop($group, $key, $defaultValue = false, $duration = null) : mixed
+
+```php
+// cart could be [1,2,3,4];
+$element=$this->shift('','cart'); // now cart is [2,3,4] and $element is 1
 ```
 
 
@@ -202,9 +270,12 @@ $cache->select(1);
 
 # Version
 
-      
+
+- 2.6 2021-06-12
+    
+    - added the methods push(), pop(), shift() and unshift()
 - 2.5 2020-09-20
-    * Separated provider in different classes. Now it also allows to use the file system (documentone).   
+    * Separated provider in different classes. Now it also allows to use the file system (**DocumentOne**).   
 - 2.4 2020-09-13
     * The code was refactored.   
 - 2.3.1

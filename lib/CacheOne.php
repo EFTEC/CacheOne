@@ -16,12 +16,13 @@ use eftec\provider\CacheOneProviderRedis;
 use eftec\provider\ICacheOneProvider;
 use Exception;
 use ReflectionObject;
+use RuntimeException;
 
 /**
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.5 2020-09-20
+ * @version  2.6 2021-06-12
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  MIT
@@ -74,7 +75,8 @@ class CacheOne
         $timeout = 8,
         $retry = null,
         $readTimeout = null
-    ) {
+    )
+    {
         $this->type = $type;
         if ($type === 'auto') {
             if (class_exists("Redis")) {
@@ -125,7 +127,7 @@ class CacheOne
                 }
                 break;
             default:
-                trigger_error("CacheOne: type {$this->type} not defined");
+                trigger_error("CacheOne: type $this->type not defined");
         }
     }
 
@@ -191,13 +193,14 @@ class CacheOne
      * $this->invalidateGroup('customer');
      * </pre>
      * <b>Note:</b> if a key is member of more than one group, then it is invalidated for all groups.<br>
-     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a cache)<br>
+     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a
+     * cache)<br>
      *
      * @param string|array $group Delete an entire group (or groups)
      *
      * @return bool Returns true if it deleted more than one key or false if error or no key deleted.
      */
-    public function invalidateGroup($group): bool
+    public function invalidateGroup($group)
     {
         if (!is_array($group)) {
             $group = [$group];
@@ -219,10 +222,9 @@ class CacheOne
      */
     public function unserialize($input, $forcedSerializer = null)
     {
-        $forcedSerializer = $forcedSerializer ?? $this->serializer;
+        $forcedSerializer = isset($forcedSerializer) ? $forcedSerializer : $this->serializer;
         switch ($forcedSerializer) {
             case 'php':
-                /** @noinspection UnserializeExploitsInspection */
                 return unserialize($input);
             case 'json-array':
                 return json_decode($input, true);
@@ -231,7 +233,7 @@ class CacheOne
             case 'none':
                 return $input;
             default:
-                trigger_error("serialize {$this->serializer} not defined");
+                trigger_error("serialize $this->serializer not defined");
                 return null;
         }
     }
@@ -275,7 +277,7 @@ class CacheOne
      *                             It's used when we need to invalidate (delete) a group of keys.
      * @param string $key          key to return.
      *
-     * @param bool   $defaultValue [default is false] If not found or error, then it returns this value.<br>
+     * @param mixed  $defaultValue [default is false] If not found or error, then it returns this value.<br>
      *
      * @return mixed returns false if the value is not found, otherwise it returns the value.
      */
@@ -330,13 +332,15 @@ class CacheOne
      * $this->set('customer','listCustomer',$listCustomer); // store in customer:listCustomer default ttl = 24 minutes.
      * $this->set('customer','listCustomer',$listCustomer,86400); // store in customer:listCustomer ttl = 1 day.
      * </pre>
-     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a cache)<br>
+     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a
+     * cache)<br>
      * <b>Note:</b> The duration is ignored when we use "documentone". It uses instead the default ttl <br>
      *
      * @param string|array $groups   if any, it's a group or category of elements.<br>
      *                               A single key could be member of more than a group<br>
      *                               It's used when we need to invalidate (delete) a group of keys.<br>
-     *                               If the group or the first element of the group is empty, then it stores the key<br>
+     *                               If the group or the first element of the group is empty, then it stores the
+     *                               key<br>
      * @param string       $key      The key used to store the information.
      * @param mixed        $value    This value shouldn't be serialized because the class serializes it.
      * @param int|null     $duration In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
@@ -345,7 +349,7 @@ class CacheOne
      *
      * @return bool
      */
-    public function set($groups, $key, $value, $duration = null): bool
+    public function set($groups, $key, $value, $duration = null)
     {
         if (!$this->enabled) {
             return false;
@@ -355,29 +359,209 @@ class CacheOne
             trigger_error('CacheOne: set must have a non empty group of a empty array');
             return false;
         }
-        $groupID = $groups[0]; // first group
-        $uid = $this->genId($groupID, $key);
-        return $this->service->set($groupID, $uid, $groups, $key, $value, $duration ?? $this->defaultTTL);
+        $uid = $this->genId($key);
+        return $this->service->set($uid, $groups, $key, $value, isset($duration) ? $duration : $this->defaultTTL);
     }
 
     /**
-     * Generates the unique key based in the schema (if any) : group (if any)  key.
+     * Generates the unique key based in the schema (if any) +  key.
      *
-     * @param $group
-     * @param $key
+     * @param string $key
      *
      * @return string
      */
-    public function genId($group, $key)
+    public function genId($key)
     {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
-        // $r .= ($group) ? $group . $this->separatorUID : '';
         return $r . $key;
     }
 
     /**
+     * It push a new value into the cache at the end of the array/list.<br>
+     * If the previous value does not exists then, it creates a new array<br>
+     * If the previous value is not an array then, it throws an exception<br>
+     * <b>Note:</b> This operation is not atomic<br>
+     * <b>Example:</b><br>
+     * <pre>
+     * $this->push('','cart',$item,2000); // it adds a new element into the cart unlimitely.
+     * $this->push('','cart',$item,2000,20,'popold'); // it limits the cart to 20 elements, pop old item if req.
+     * $this->push('','cart',$item,2000,20,'nonew'); // if the cart has 20 elements, then it doesn't add $item
+     * </pre><br>
+     *
+     * @param string|array $groups        if any, it's a group or category of elements.<br>
+     *                                    A single key could be member of more than a group<br>
+     *                                    It's used when we need to invalidate (delete) a group of keys.<br>
+     *                                    If the group or the first element of the group is empty, then it stores the
+     *                                    key<br>
+     * @param string       $key           The key used to store the information.
+     * @param mixed        $value         This value shouldn't be serialized because the class serializes it.
+     * @param int|null     $duration      In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
+     *                                    It is ignored when type="documentone".
+     * @param int          $limit         If zero, then it does not limit the values stored into the array.<br>
+     *                                    If the value is not zero and the number of elements of the array surprases
+     *                                    this limit, then it trim the first value and it adds a new value at the end
+     *                                    of the list.
+     * @param string       $limitStrategy =['nonew','popold','shiftold'][$i] // default is shiftold<br>
+     *                                    nonew = it does not add a new element if the limit is reached<br>
+     *                                    shiftold = if the limit is reached then it pops the first element<br>
+     *                                    popold = if the limit is reached then it removes the last element<br>
+     *
+     * @return array|bool
+     */
+    public function push($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'shiftold')
+    {
+       return $this->executePushUnShift('push',$groups,$key,$value,$duration,$limit,$limitStrategy);
+    }
+    /**
+     * It push a new value into the cache at the beginer of the array/list.<br>
+     * If the previous value does not exists then, it creates a new array<br>
+     * If the previous value is not an array then, it throws an exception<br>
+     * <b>Note:</b> This operation is not atomic<br>
+     * <b>Example:</b><br>
+     * <pre>
+     * $this->unshift('','cart',$item,2000); // it adds a new element into the cart unlimitely.
+     * $this->unshift('','cart',$item,2000,20,'popold'); // it limits the cart to 20 elements, pop old item if req.
+     * $this->unshift('','cart',$item,2000,20,'nonew'); // if the cart has 20 elements, then it doesn't add $item
+     * </pre><br>
+     *
+     * @param string|array $groups        if any, it's a group or category of elements.<br>
+     *                                    A single key could be member of more than a group<br>
+     *                                    It's used when we need to invalidate (delete) a group of keys.<br>
+     *                                    If the group or the first element of the group is empty, then it stores the
+     *                                    key<br>
+     * @param string       $key           The key used to store the information.
+     * @param mixed        $value         This value shouldn't be serialized because the class serializes it.
+     * @param int|null     $duration      In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
+     *                                    It is ignored when type="documentone".
+     * @param int          $limit         If zero, then it does not limit the values stored into the array.<br>
+     *                                    If the value is not zero and the number of elements of the array surprases
+     *                                    this limit, then it trim the first value and it adds a new value at the end
+     *                                    of the list.
+     * @param string       $limitStrategy =['nonew','popold','shiftold'][$i] // default is shiftold<br>
+     *                                    nonew = it does not add a new element if the limit is reached<br>
+     *                                    shiftold = if the limit is reached then it pops the first element<br>
+     *                                    popold = if the limit is reached then it removes the last element<br>
+     *
+     * @return array|bool
+     */
+    public function unshift($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'popold')
+    {
+        return $this->executePushUnShift('unshift',$groups,$key,$value,$duration,$limit,$limitStrategy);
+    }
+    protected function executePushUnShift($type, $groups, $key, $value, $duration = null, $limit = 0
+        , $limitStrategy = 'shiftold') {
+        if (!$this->enabled) {
+            return false;
+        }
+        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
+        if (count($groups) === 0) {
+            trigger_error('CacheOne: set must have a non empty group of a empty array');
+            return false;
+        }
+        $groupID = $groups[0]; // first group
+        $originalArray = $this->service->get($groupID, $key, []);
+        if (!is_array($originalArray)) {
+            throw new RuntimeException('[CacheOne] unable to push cache, the value stored is not an array 
+            or setSerializer is not set');
+        }
+        if ($limit > 0 && count($originalArray) >= $limit) {
+            if ($limitStrategy === 'shiftold') {
+                array_shift($originalArray); // we remove the most old element of the array
+            } elseif($limitStrategy==='nonew') {
+                // true but no value added.
+                return true;
+            } else {
+                // popold
+                array_pop($originalArray); // we remove the most recent element of the array
+            }
+        }
+        if($type==='push') {
+            $originalArray[] = $value;
+        } else {
+            array_unshift($originalArray,$value);
+        }
+        if (count($groups) === 0) {
+            trigger_error('CacheOne: set must have a non empty group of a empty array');
+            return false;
+        }
+        $uid = $this->genId($key);
+        return $this->service->set($uid, $groups, $key, $originalArray, isset($duration)
+            ? $duration : $this->defaultTTL);
+    }
+
+    /**
+     * It pops a value at the end of the array.<br>
+     * It the array does not exists then it returns $defaultValue<br>
+     * It the array is empty then it returns null<br>
+     * The original array is modified (it is removed the element that it was pop'ed<br>
+     * <b>Example:</b><br>
+     * <pre>
+     * $element=$this->pop('','cart');
+     * </pre>
+     *
+     * @param string|array $group        if any, it's a group or category of elements.<br>
+     *                                   A single key could be member of more than a group<br>
+     *                                   It's used when we need to invalidate (delete) a group of keys.<br>
+     *                                   If the group or the first element of the group is empty, then it stores the
+     *                                   key<br>
+     * @param string       $key          The key used to store the information.
+     * @param mixed        $defaultValue [default is false] If not found or error, then it returns this value.<br>
+     * @param int|null     $duration     In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
+     *                                   It is ignored when type="documentone".
+     * @return false|mixed|string|null
+     */
+    public function pop($group, $key, $defaultValue = false, $duration = null)
+    {
+        return $this->executePopShift('pop',$group,$key,$defaultValue,$duration);
+    }
+    /**
+     * It shift (extract) a value at the beginner of the array.<br>
+     * It the array does not exists then it returns $defaultValue<br>
+     * It the array is empty then it returns null<br>
+     * The original array is modified (it is removed the element that it was pop'ed<br>
+     * <b>Example:</b><br>
+     * <pre>
+     * $element=$this->shift('','cart');
+     * </pre>
+     *
+     * @param string|array $group        if any, it's a group or category of elements.<br>
+     *                                   A single key could be member of more than a group<br>
+     *                                   It's used when we need to invalidate (delete) a group of keys.<br>
+     *                                   If the group or the first element of the group is empty, then it stores the
+     *                                   key<br>
+     * @param string       $key          The key used to store the information.
+     * @param mixed        $defaultValue [default is false] If not found or error, then it returns this value.<br>
+     * @param int|null     $duration     In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
+     *                                   It is ignored when type="documentone".
+     * @return false|mixed|string|null
+     */
+    public function shift($group, $key, $defaultValue = false, $duration = null)
+    {
+        return $this->executePopShift('shift',$group,$key,$defaultValue,$duration);
+    }
+    protected function executePopShift($type, $group, $key, $defaultValue = false, $duration = null) {
+        if (!$this->enabled) {
+            return $defaultValue;
+        }
+        $originalArray = $this->service->get($group, $key, $defaultValue);
+        if ($originalArray === false) {
+            // key not found, nothing to pop
+            return $defaultValue;
+        }
+        if (!is_array($originalArray)) {
+            throw new RuntimeException('[CacheOne] unable to pop cache, the value stored is not an array 
+            or setSerializer is not set');
+        }
+        $final =$type==='pop' ? array_pop($originalArray) : array_shift($originalArray);
+        $uid = $this->genId($key);
+        $rs = $this->service->set($uid, $group, $key, $originalArray, isset($duration)
+            ? $duration : $this->defaultTTL);
+        return $rs === false ? $defaultValue : $final;
+    }
+
+    /**
      * It gets the default time to live. Zero means unlimited.
-     * 
+     *
      * @return int (in seconds)
      */
     public function getDefaultTTL()
@@ -409,7 +593,7 @@ class CacheOne
             case 'none':
                 return $input;
             default:
-                trigger_error("serialize {$this->serializer} not defined");
+                trigger_error("serialize $this->serializer not defined");
                 return '';
         }
     }
@@ -444,7 +628,7 @@ class CacheOne
      *
      * @return bool
      */
-    public function invalidate($group = '', $key = ''): bool
+    public function invalidate($group = '', $key = '')
     {
         return $this->service->invalidate($group, $key);
     }

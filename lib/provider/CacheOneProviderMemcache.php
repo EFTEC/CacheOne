@@ -60,6 +60,9 @@ class CacheOneProviderMemcache implements ICacheOneProvider
 
     public function invalidateAll()
     {
+        if($this->memcache===null) {
+            return false;
+        }
         return @$this->memcache->flush();
     }
 
@@ -68,13 +71,18 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         if ($this->memcache === null) {
             return false;
         }
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         $v = $this->memcache->get($uid);
         return $v === false ? $defaultValue : $v;
     }
 
-    public function set($groupID, $uid, $groups, $key, $value, $duration = 1440)
+    public function set( $uid, $groups, $key, $value, $duration = 1440)
     {
+        if (count($groups) === 0) {
+            trigger_error('[CacheOne]: set group must contains at least one element');
+            return false;
+        }
+        $groupID = $groups[0]; // first group
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
@@ -105,7 +113,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
 
     public function invalidate($group = '', $key = '')
     {
-        $uid = $this->parent->genId($group, $key);
+        $uid = $this->parent->genId($key);
         return @$this->memcache->delete($uid);
     }
 
