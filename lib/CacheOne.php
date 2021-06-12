@@ -356,8 +356,7 @@ class CacheOne
         }
         $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
         if (count($groups) === 0) {
-            trigger_error('CacheOne: set must have a non empty group of a empty array');
-            return false;
+            throw new RuntimeException('[CacheOne]: set must have a non empty group of a empty array');
         }
         $uid = $this->genId($key);
         return $this->service->set($uid, $groups, $key, $value, isset($duration) ? $duration : $this->defaultTTL);
