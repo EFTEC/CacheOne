@@ -270,6 +270,8 @@ $cache->select(1);
 
 # Version
 
+- 2.7 2021-06-13
+  * method get() used by provider, never needed the family/group, so it is removed. It is the last version for 2.7
 - 2.6.1 2021-06-12
   * changed dependencies in composer.json
 - 2.6 2021-06-12
