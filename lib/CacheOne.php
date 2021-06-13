@@ -50,6 +50,8 @@ class CacheOne
     private $separatorUID = ':';
     /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values */
     private $serializer = 'php';
+    /** @var mixed */
+    private $defaultValue = false;
 
     /**
      * Open the cache
@@ -255,14 +257,14 @@ class CacheOne
      * Wrappper of get()
      *
      * @param string       $uid
-     * @param string|array $family
+     * @param string|array $family [not used] this value could be any value
      *
      * @return mixed
-     * @see \eftec\CacheOne::get
+     * @see \eftec\CacheOne::getValue
      */
     public function getCache($uid, $family = '')
     {
-        return $this->get($family, $uid);
+        return $this->getValue($uid);
     }
 
     /**
@@ -273,20 +275,34 @@ class CacheOne
      * $result=$this->get('customer','listCustomers',[]); // it gets customers:key1 if any or an empty array
      * </pre>
      *
-     * @param string $group        if any, it's a group or category of elements.<br>
-     *                             It's used when we need to invalidate (delete) a group of keys.
      * @param string $key          key to return.
      *
      * @param mixed  $defaultValue [default is false] If not found or error, then it returns this value.<br>
      *
      * @return mixed returns false if the value is not found, otherwise it returns the value.
      */
-    public function get($group, $key, $defaultValue = false)
+    public function getValue($key, $defaultValue = PHP_INT_MAX)
     {
+        $defaultValue = $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue;
         if (!$this->enabled) {
             return $defaultValue;
         }
-        return $this->service->get($group, $key, $defaultValue);
+        return $this->service->get($key, $defaultValue);
+    }
+
+    /**
+     * Wrappper of getValue(). It is keep for compatibility purpose.
+     * @param mixed  $group        [not used] You can use any value here
+     * @param string $key          The string to read
+     * @param mixed  $defaultValue The return value if the value is not found (defalt is false)
+     * @return array|false|mixed|string|null
+     * @see \eftec\CacheOne::getValue
+     */
+    public function get($group, $key, $defaultValue = PHP_INT_MAX)
+    {
+        $r=$this->getValue($key, $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
+        // $this->resetStack();
+        return $r;
     }
 
     /**
@@ -409,8 +425,47 @@ class CacheOne
      */
     public function push($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'shiftold')
     {
-       return $this->executePushUnShift('push',$groups,$key,$value,$duration,$limit,$limitStrategy);
+        return $this->executePushUnShift('push', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
+
+    protected function executePushUnShift($type, $groups, $key, $value, $duration = null, $limit = 0
+        , $limitStrategy = 'shiftold')
+    {
+        if (!$this->enabled) {
+            return false;
+        }
+        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
+        $originalArray = $this->service->get($key, []);
+        $originalArray = $originalArray === null ? [] : $originalArray;
+        if (!is_array($originalArray)) {
+            throw new RuntimeException('[CacheOne] unable to push cache, the value stored is not an array 
+            or setSerializer is not set');
+        }
+        if ($limit > 0 && count($originalArray) >= $limit) {
+            if ($limitStrategy === 'shiftold') {
+                array_shift($originalArray); // we remove the most old element of the array
+            } elseif ($limitStrategy === 'nonew') {
+                // true but no value added.
+                return true;
+            } else {
+                // popold
+                array_pop($originalArray); // we remove the most recent element of the array
+            }
+        }
+        if ($type === 'push') {
+            $originalArray[] = $value;
+        } else {
+            array_unshift($originalArray, $value);
+        }
+        if (count($groups) === 0) {
+            trigger_error('CacheOne: set must have a non empty group of a empty array');
+            return false;
+        }
+        $uid = $this->genId($key);
+        return $this->service->set($uid, $groups, $key, $originalArray, isset($duration)
+            ? $duration : $this->defaultTTL);
+    }
+
     /**
      * It push a new value into the cache at the beginer of the array/list.<br>
      * If the previous value does not exists then, it creates a new array<br>
@@ -445,47 +500,7 @@ class CacheOne
      */
     public function unshift($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'popold')
     {
-        return $this->executePushUnShift('unshift',$groups,$key,$value,$duration,$limit,$limitStrategy);
-    }
-    protected function executePushUnShift($type, $groups, $key, $value, $duration = null, $limit = 0
-        , $limitStrategy = 'shiftold') {
-        if (!$this->enabled) {
-            return false;
-        }
-        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
-        if (count($groups) === 0) {
-            trigger_error('CacheOne: set must have a non empty group of a empty array');
-            return false;
-        }
-        $groupID = $groups[0]; // first group
-        $originalArray = $this->service->get($groupID, $key, []);
-        if (!is_array($originalArray)) {
-            throw new RuntimeException('[CacheOne] unable to push cache, the value stored is not an array 
-            or setSerializer is not set');
-        }
-        if ($limit > 0 && count($originalArray) >= $limit) {
-            if ($limitStrategy === 'shiftold') {
-                array_shift($originalArray); // we remove the most old element of the array
-            } elseif($limitStrategy==='nonew') {
-                // true but no value added.
-                return true;
-            } else {
-                // popold
-                array_pop($originalArray); // we remove the most recent element of the array
-            }
-        }
-        if($type==='push') {
-            $originalArray[] = $value;
-        } else {
-            array_unshift($originalArray,$value);
-        }
-        if (count($groups) === 0) {
-            trigger_error('CacheOne: set must have a non empty group of a empty array');
-            return false;
-        }
-        $uid = $this->genId($key);
-        return $this->service->set($uid, $groups, $key, $originalArray, isset($duration)
-            ? $duration : $this->defaultTTL);
+        return $this->executePushUnShift('unshift', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
 
     /**
@@ -509,10 +524,41 @@ class CacheOne
      *                                   It is ignored when type="documentone".
      * @return false|mixed|string|null
      */
-    public function pop($group, $key, $defaultValue = false, $duration = null)
+    public function pop($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
     {
-        return $this->executePopShift('pop',$group,$key,$defaultValue,$duration);
+        return $this->executePopShift('pop', $group, $key, $defaultValue, $duration);
     }
+
+    /**
+     * @param string       $type
+     * @param string|array $group
+     * @param string       $key
+     * @param mixed        $defaultValue
+     * @param int|null     $duration
+     * @return bool|int|mixed|string|null
+     */
+    protected function executePopShift($type, $group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
+    {
+        $defaultValue = $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue;
+        if (!$this->enabled) {
+            return $defaultValue;
+        }
+        $originalArray = $this->service->get($key, $defaultValue);
+        if ($originalArray === false) {
+            // key not found, nothing to pop
+            return $defaultValue;
+        }
+        if (!is_array($originalArray)) {
+            throw new RuntimeException('[CacheOne] unable to pop cache, the value stored is not an array 
+            or setSerializer is not set');
+        }
+        $final = $type === 'pop' ? array_pop($originalArray) : array_shift($originalArray);
+        $uid = $this->genId($key);
+        $rs = $this->service->set($uid, $group, $key, $originalArray, isset($duration)
+            ? $duration : $this->defaultTTL);
+        return $rs === false ? $defaultValue : $final;
+    }
+
     /**
      * It shift (extract) a value at the beginner of the array.<br>
      * It the array does not exists then it returns $defaultValue<br>
@@ -534,28 +580,9 @@ class CacheOne
      *                                   It is ignored when type="documentone".
      * @return false|mixed|string|null
      */
-    public function shift($group, $key, $defaultValue = false, $duration = null)
+    public function shift($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
     {
-        return $this->executePopShift('shift',$group,$key,$defaultValue,$duration);
-    }
-    protected function executePopShift($type, $group, $key, $defaultValue = false, $duration = null) {
-        if (!$this->enabled) {
-            return $defaultValue;
-        }
-        $originalArray = $this->service->get($group, $key, $defaultValue);
-        if ($originalArray === false) {
-            // key not found, nothing to pop
-            return $defaultValue;
-        }
-        if (!is_array($originalArray)) {
-            throw new RuntimeException('[CacheOne] unable to pop cache, the value stored is not an array 
-            or setSerializer is not set');
-        }
-        $final =$type==='pop' ? array_pop($originalArray) : array_shift($originalArray);
-        $uid = $this->genId($key);
-        $rs = $this->service->set($uid, $group, $key, $originalArray, isset($duration)
-            ? $duration : $this->defaultTTL);
-        return $rs === false ? $defaultValue : $final;
+        return $this->executePopShift('shift', $group, $key, $defaultValue, $duration);
     }
 
     /**
@@ -570,10 +597,23 @@ class CacheOne
 
     /**
      * @param int $ttl number in seconds of the time to live. Zero means unlimited.
+     * @return $this
      */
     public function setDefaultTTL($ttl)
     {
         $this->defaultTTL = $ttl;
+        return $this;
+    }
+
+    /**
+     * It sets the default value.
+     * @param $value
+     * @return $this
+     */
+    public function setDefaultValue($value)
+    {
+        $this->defaultValue = $value;
+        return $this;
     }
 
     /**
@@ -630,6 +670,12 @@ class CacheOne
     public function invalidate($group = '', $key = '')
     {
         return $this->service->invalidate($group, $key);
+    }
+
+    protected function resetStack()
+    {
+        $this->defaultTTL = 1440;
+        $this->defaultValue = false;
     }
 
 }

@@ -66,7 +66,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return @$this->memcache->flush();
     }
 
-    public function get($group, $key, $defaultValue = false)
+    public function get($key, $defaultValue = false)
     {
         if ($this->memcache === null) {
             return false;

@@ -61,7 +61,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         return $r;
     }
 
-    public function get($group, $key, $defaultValue = false)
+    public function get($key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
         $age=$this->documentOne->getTimeStamp($uid,true);

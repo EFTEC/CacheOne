@@ -11,6 +11,7 @@ namespace eftec\tests;
 use eftec\CacheOne;
 
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use stdClass;
 
 class CacheOneTest extends TestCase
@@ -24,6 +25,19 @@ class CacheOneTest extends TestCase
         $cache=new CacheOne('redis','127.0.0.1','',11212);
         self::assertEquals(false,$cache->enabled);
         self::assertEquals('php',$cache->getSerializer());
+    }
+    public function test_notfound()
+    {
+        $cache = (new CacheOne('redis', '127.0.0.1', 'test'))->setSerializer('php');
+
+        self::assertEquals(false, $cache->get('','notfound'));
+        self::assertEquals(null, $cache->get('','notfound',null));
+        self::assertEquals(123, $cache->get('','notfound',123));
+        self::assertEquals([], $cache->get('','notfound',[]));
+        $cache->invalidate('','notfound2');
+        self::assertEquals(true, $cache->push('','notfound2',123));
+        self::assertEquals([123], $cache->get('','notfound2'));
+
     }
     public function test_push() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
@@ -59,35 +73,36 @@ class CacheOneTest extends TestCase
     public function test_push_error1() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $cache->push('','item',4,null,5);
     }
     public function test_push_error2() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $cache->pop('','item');
     }
     public function test_push_error3() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $cache->shift('','item');
         $cache->unshift('','item',4,null,5);
     }
     public function test_push_error4() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $cache->unshift('','item',4,null,5);
     }
     public function test_set_error4() {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $cache->set([],'item','hello',123);
     }
-    
-    private function runMe($type,$schema,$serializer='php',$server='127.0.0.1')  {
+
+    /** @noinspection PhpSameParameterValueInspection */
+    private function runMe($type, $schema, $serializer='php', $server='127.0.0.1')  {
         $cache=new CacheOne($type,$server,$schema);
         $cache->setSerializer($serializer);
         $cache->select(0);

@@ -61,7 +61,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
         return apcu_clear_cache();
     }
 
-    public function get($group, $key, $defaultValue = false)
+    public function get($key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize(apcu_fetch($uid));

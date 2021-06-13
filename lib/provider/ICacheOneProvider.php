@@ -20,7 +20,13 @@ interface ICacheOneProvider
 
     public function invalidateAll();
 
-    public function get($group, $key, $defaultValue = false);
+    /**
+     * @param string $key          The key of the value to read.
+     * @param mixed  $defaultValue The default value (if the key is not found)
+     * @return mixed               The result, if setSerializer() is set then it could returns a variable.<br>
+     *                             If setSerializer() is not set, then it will returns a string.
+     */
+    public function get($key, $defaultValue = false);
 
     public function set($uid, $groups, $key, $value, $duration = 1440);
 

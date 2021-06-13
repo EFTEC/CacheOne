@@ -85,7 +85,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $this->redis->flushDB();
     }
 
-    public function get($group, $key, $defaultValue = false)
+    public function get($key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize($this->redis->get($uid));
