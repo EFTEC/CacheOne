@@ -10,8 +10,9 @@ or an entire group of elements.
 [![Total Downloads](https://poser.pugx.org/eftec/CacheOne/downloads)](https://packagist.org/packages/eftec/CacheOne)
 [![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php-7.x-green.svg)]()
-[![php](https://img.shields.io/badge/php-8.x-green.svg)]()
+[![php](https://img.shields.io/badge/php-7.2-green.svg)]()
+[![php](https://img.shields.io/badge/php-8.0-green.svg)]()
+[![php](https://img.shields.io/badge/php-8.1-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
 
 - [CacheOne](#cacheone)
