@@ -1,5 +1,5 @@
 # CacheOne
-CacheOne is a cache class of service for php. It supports Redis, Memcache and/or APCU.
+CacheOne is a cache class of service for php. It supports Redis, Memcache, PDO and/or APCU.
 
 Unlikely other cache libraries, this library is based in group (optional). So it's suitable to invalidate a single key 
 or an entire group of elements.
@@ -67,6 +67,23 @@ use eftec\CacheOne;
 include "../vendor/autoload.php";
 $cache=new CacheOne("apcu");
 ```
+
+Creates a new connection using PdoOne
+
+```php
+use eftec\PdoOne;
+use eftec\CacheOne;
+include "../vendor/autoload.php";
+
+$pdo=new PdoOne('mysql','127.0.0.1','root','abc.123','travisdb');
+$pdo->logLevel=3; // optional, if you want to debug the errors. 
+$pdo->open();
+$pdo->setKvDefaultTable('KVTABLA'); // select the table to be used as a key-value storage
+$pdo->createTableKV();  // optional, create the key-value table (it throws an exception if the table exists)
+$cache=new CacheOne("pdoone"); // the instance $pdo is injected automatically into CacheOne.
+```
+
+
 
 Creates a new connection using memcache
 
@@ -230,7 +247,7 @@ $cache->invalidateGroup(["group1","group2"]); // invalidate all key inside group
 
 > invalidateAll()
 
-It invalidates (and delete all the redis repository, memcache or apcu)
+It invalidates (and delete all the redis repository, memcache, pdoone or apcu)
 
 ```php
 $cache->invalidateAll(); 
@@ -250,7 +267,7 @@ $cache->setSerializer('none'); // set the serializer to none (the value must be 
 
 ## getSerializer();
 
-Get the how the values are serialized.
+Get then how the values are serialized.
 
 ```php
 $type=$cache->getSerializer(); // get php,json-array,json-object or none
@@ -258,24 +275,27 @@ $type=$cache->getSerializer(); // get php,json-array,json-object or none
 
 
 
-## Select a database (Redis)
+## Select a database (Redis/PdoOne)
 
 >  select($dbindex) 
 
-It selects a different database. By default the database is 0.
+It selects a different database. By default, the database is 0.
 
 ```php
 $cache->select(1);
+$cache->select('table'); // PdoOne
 ```
 
 # Version
 
+* 2.8 2022-02-10
+  * Added a new provider PdoOne (Pdo / Database).
+  * Dropped support for PHP 7.1 and lower. If you can use PHP 2.7 if you want support.
 - 2.7 2021-06-13
   * method get() used by provider, never needed the family/group, so it is removed. It is the last version for 2.7
 - 2.6.1 2021-06-12
   * changed dependencies in composer.json
 - 2.6 2021-06-12
-    
     - added the methods push(), pop(), shift() and unshift()
 - 2.5 2020-09-20
     * Separated provider in different classes. Now it also allows to use the file system (**DocumentOne**).   
@@ -284,7 +304,7 @@ $cache->select(1);
 - 2.3.1
     * fix: The catalog is always stored as an array, even if the serializer is json-object
 - 2.3
-    * Added method setSerializer() and getSerializer(). By default CacheOne uses PHP for serialization.
+    * Added method setSerializer() and getSerializer(). By default, CacheOne uses PHP for serialization.
     With this feature, it is possible to serialize using json or none
 - 2.2.2 2020-03-13
     * Now the duration of the catalog is always lasting than the duration of the key

@@ -6,6 +6,7 @@ namespace eftec\provider;
 
 use eftec\CacheOne;
 use eftec\DocumentStoreOne\DocumentStoreOne;
+use Exception;
 
 class CacheOneProviderDocumentOne implements ICacheOneProvider
 {
@@ -28,10 +29,10 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         $this->documentOne=new DocumentStoreOne($server,$schema);
         $this->parent->enabled=true;
         $this->documentOne->autoSerialize(true);
-        
+
     }
 
-    public function invalidateGroup($group)
+    public function invalidateGroup($group) : bool
     {
         $count = 0;
         if ($this->parent->enabled) {
@@ -63,15 +64,19 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     public function get($key, $defaultValue = false)
     {
-        $uid = $this->parent->genId($key);
-        $age=$this->documentOne->getTimeStamp($uid,true);
-        $defaultTTL=$this->parent->getDefaultTTL();
-        if($age>$defaultTTL && $defaultTTL!==0) {
-            // file expired.
-            $this->documentOne->delete($uid);
-            return false;
+        try {
+            $uid = $this->parent->genId($key);
+            $age = $this->documentOne->getTimeStamp($uid, true);
+            $defaultTTL = $this->parent->getDefaultTTL();
+            if ($age > $defaultTTL && $defaultTTL !== 0) {
+                // file expired.
+                $this->documentOne->delete($uid);
+                return false;
+            }
+            return $this->documentOne->get($uid);
+        } catch(Exception $ex) {
+            return $defaultValue;
         }
-        return $this->documentOne->get($uid);
     }
 
     public function set($uid, $groups, $key, $value, $duration = 1440)
@@ -81,13 +86,17 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
             return false;
         }
         $groupID = $groups[0]; // first group
+
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
+                $this->documentOne->throwable=false;
                 $cat = $this->documentOne->get($catUid);
+                $this->documentOne->throwable=true;
                 if ($cat === false) {
                     $cat = array(); // created a new catalog
                 }
+
                 if (time() % 100 === 0) {
                     // garbage collector of the catalog. We run it around every 20th reads.
                     $keys = array_keys($cat);
@@ -98,9 +107,9 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
                     }
                 }
                 $cat[$uid] = 1;
-                // the duration of the catalog is 0 (infinite) or the maximum value between the 
+                // the duration of the catalog is 0 (infinite) or the maximum value between the
                 // default duration and the duration of the key
-                //$catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration 
+                //$catDuration = (($duration === 0 || $duration > $this->catDuration) && $this->catDuration
                 //    !== 0)
                 //    ? $duration : $this->catDuration;
                 //$catDuration = ($catDuration !== 0) ? time() + $catDuration : 0; // duration as timestamp

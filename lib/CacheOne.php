@@ -13,6 +13,7 @@ use eftec\provider\CacheOneProviderAPCU;
 use eftec\provider\CacheOneProviderDocumentOne;
 use eftec\provider\CacheOneProviderMemcache;
 use eftec\provider\CacheOneProviderRedis;
+use eftec\provider\CacheOneProviderPdoOne;
 use eftec\provider\ICacheOneProvider;
 use Exception;
 use ReflectionObject;
@@ -31,7 +32,7 @@ class CacheOne
 {
     /** @var ICacheOneProvider */
     public $service;
-    /** @var string=['redis','memcache','apcu','documentone'][$i] */
+    /** @var string=['redis','memcache','apcu','pdoone','documentone'][$i] */
     public $type;
 
     /** @var bool if the cache is up */
@@ -56,7 +57,7 @@ class CacheOne
     /**
      * Open the cache
      *
-     * @param string     $type        =['auto','redis','memcache','apcu','documentone'][$i]
+     * @param string     $type        =['auto','redis','memcache','apcu','pdoone','documentone'][$i]
      * @param string     $server      ip of the server.
      * @param string     $schema      Default schema (optional).
      * @param int|string $port        [optional] By default is 6379 (redis) and 11211 (memcached)
@@ -87,6 +88,8 @@ class CacheOne
                 $this->type = 'memcache';
             } elseif (extension_loaded('apcu')) {
                 $this->type = 'apcu';
+            } elseif (class_exists('\eftec\PdoOne')) {
+                $this->type = 'pdoone';
             } elseif (class_exists('\eftec\DocumentStoreOne\DocumentStoreOne')) {
                 $this->type = 'documentone';
             }
@@ -100,24 +103,31 @@ class CacheOne
                 }
                 $this->service = null;
                 $this->enabled = false;
-                trigger_error('CacheOne: Redis extension not installed');
-
-                return;
+                throw new RuntimeException('CacheOne: Redis extension not installed');
             case 'memcache':
                 $this->separatorUID = '_';
                 if (class_exists("Memcache")) {
                     $this->service = new CacheOneProviderMemcache($this, $server, $port, $schema);
                 } else {
                     $this->enabled = false;
-                    trigger_error('CacheOne: memcache extension not installed');
+                    throw new RuntimeException('CacheOne: memcache extension not installed');
                 }
                 return;
+            case 'pdoone':
+                if (PdoOne::instance(false) !== null) {
+                    $this->service = new CacheOneProviderPdoOne($this, $schema);
+                } else {
+                    $this->enabled = false;
+                    throw new RuntimeException('CacheOne: pdoone extension not installed or no instance is found');
+                }
+                return;
+
             case 'apcu':
                 if (extension_loaded('apcu')) {
                     $this->service = new CacheOneProviderAPCU($this, $schema);
                 } else {
                     $this->enabled = false;
-                    trigger_error('CacheOne: apcu extension not installed');
+                    throw new RuntimeException('CacheOne: apcu extension not installed');
                 }
                 return;
             case 'documentone':
@@ -125,11 +135,11 @@ class CacheOne
                     $this->service = new CacheOneProviderDocumentOne($this, $server, $schema);
                 } else {
                     $this->enabled = false;
-                    trigger_error('CacheOne: DocumentStoreOne library not installed');
+                    throw new RuntimeException('CacheOne: DocumentStoreOne library not installed');
                 }
                 break;
             default:
-                trigger_error("CacheOne: type $this->type not defined");
+                throw new RuntimeException("CacheOne: type $this->type not defined");
         }
     }
 
@@ -178,9 +188,9 @@ class CacheOne
     }
 
     /**
-     * It changes the default database (0) for another one.  It's only for Redis
+     * It changes the default database (0) for another one.  It's only for Redis and PdoOne
      *
-     * @param int $dbindex
+     * @param mixed $dbindex
      *
      * @see https://redis.io/commands/select
      */
@@ -195,14 +205,15 @@ class CacheOne
      * $this->invalidateGroup('customer');
      * </pre>
      * <b>Note:</b> if a key is member of more than one group, then it is invalidated for all groups.<br>
-     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a
+     * <b>Note:</b> The operation of update of the catalog of the group is not atomic, but it is tolerable (for a
      * cache)<br>
      *
      * @param string|array $group Delete an entire group (or groups)
      *
      * @return bool Returns true if it deleted more than one key or false if error or no key deleted.
+     * @throws Exception
      */
-    public function invalidateGroup($group)
+    public function invalidateGroup($group): bool
     {
         if (!is_array($group)) {
             $group = [$group];
@@ -210,7 +221,7 @@ class CacheOne
         return $this->service->invalidateGroup($group);
     }
 
-    public function genCatId($group)
+    public function genCatId($group): string
     {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         return $r . $group . $this->cat_postfix;
@@ -224,19 +235,19 @@ class CacheOne
      */
     public function unserialize($input, $forcedSerializer = null)
     {
-        $forcedSerializer = isset($forcedSerializer) ? $forcedSerializer : $this->serializer;
+        $forcedSerializer = $forcedSerializer ?? $this->serializer;
         switch ($forcedSerializer) {
             case 'php':
-                return unserialize($input);
+                /** @noinspection UnserializeExploitsInspection */
+                return $input === null ? null : unserialize($input);
             case 'json-array':
-                return json_decode($input, true);
+                return $input === null ? null : json_decode($input, true);
             case 'json-object':
-                return json_decode($input, false);
+                return $input === null ? null : json_decode($input, false);
             case 'none':
                 return $input;
             default:
-                trigger_error("serialize $this->serializer not defined");
-                return null;
+                throw new RuntimeException("serialize $this->serializer not defined");
         }
     }
 
@@ -247,8 +258,9 @@ class CacheOne
      * </pre>
      *
      * @return bool true if the operation is correct, otherwise false.
+     * @throws Exception
      */
-    public function invalidateAll()
+    public function invalidateAll(): bool
     {
         return $this->service->invalidateAll();
     }
@@ -260,6 +272,8 @@ class CacheOne
      * @param string|array $family [not used] this value could be any value
      *
      * @return mixed
+     * @throws Exception
+     * @throws Exception
      * @see \eftec\CacheOne::getValue
      */
     public function getCache($uid, $family = '')
@@ -268,7 +282,7 @@ class CacheOne
     }
 
     /**
-     * It get an item from the cache<br>
+     * It gets an item from the cache<br>
      * <pre>
      * $result=$this->get('','listCustomers'); // it gets the key1 if any or false if not found
      * $result=$this->get('customer','listCustomers'); // it gets customers:key1 if any or false if not found
@@ -280,6 +294,7 @@ class CacheOne
      * @param mixed  $defaultValue [default is false] If not found or error, then it returns this value.<br>
      *
      * @return mixed returns false if the value is not found, otherwise it returns the value.
+     * @throws Exception
      */
     public function getValue($key, $defaultValue = PHP_INT_MAX)
     {
@@ -296,19 +311,20 @@ class CacheOne
      * @param string $key          The string to read
      * @param mixed  $defaultValue The return value if the value is not found (defalt is false)
      * @return array|false|mixed|string|null
+     * @throws Exception
+     * @throws Exception
      * @see \eftec\CacheOne::getValue
      */
     public function get($group, $key, $defaultValue = PHP_INT_MAX)
     {
-        $r=$this->getValue($key, $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
         // $this->resetStack();
-        return $r;
+        return $this->getValue($key, $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
     }
 
     /**
      * @return string
      */
-    public function getSerializer()
+    public function getSerializer(): string
     {
         return $this->serializer;
     }
@@ -318,7 +334,7 @@ class CacheOne
      *
      * @return CacheOne
      */
-    public function setSerializer($serializer)
+    public function setSerializer($serializer): CacheOne
     {
         $this->serializer = $serializer;
         return $this;
@@ -333,9 +349,10 @@ class CacheOne
      * @param null         $ttl
      *
      * @return bool
+     * @throws Exception
      * @see \eftec\CacheOne::set
      */
-    public function setCache($uid, $family = '', $data = null, $ttl = null)
+    public function setCache($uid, $family = '', $data = null, $ttl = null): bool
     {
         return $this->set($family, $uid, $data, $ttl);
     }
@@ -348,7 +365,7 @@ class CacheOne
      * $this->set('customer','listCustomer',$listCustomer); // store in customer:listCustomer default ttl = 24 minutes.
      * $this->set('customer','listCustomer',$listCustomer,86400); // store in customer:listCustomer ttl = 1 day.
      * </pre>
-     * <b>Note:</b> The operation of update of the catalog of the group is not atomic but it is tolerable (for a
+     * <b>Note:</b> The operation of update of the catalog of the group is not atomic, but it is tolerable (for a
      * cache)<br>
      * <b>Note:</b> The duration is ignored when we use "documentone". It uses instead the default ttl <br>
      *
@@ -364,8 +381,10 @@ class CacheOne
      *
      *
      * @return bool
+     * @throws Exception
+     * @throws Exception
      */
-    public function set($groups, $key, $value, $duration = null)
+    public function set($groups, $key, $value, $duration = null): bool
     {
         if (!$this->enabled) {
             return false;
@@ -375,7 +394,7 @@ class CacheOne
             throw new RuntimeException('[CacheOne]: set must have a non empty group of a empty array');
         }
         $uid = $this->genId($key);
-        return $this->service->set($uid, $groups, $key, $value, isset($duration) ? $duration : $this->defaultTTL);
+        return $this->service->set($uid, $groups, $key, $value, $duration ?? $this->defaultTTL);
     }
 
     /**
@@ -385,15 +404,15 @@ class CacheOne
      *
      * @return string
      */
-    public function genId($key)
+    public function genId($key): string
     {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         return $r . $key;
     }
 
     /**
-     * It push a new value into the cache at the end of the array/list.<br>
-     * If the previous value does not exists then, it creates a new array<br>
+     * It pushes a new value into the cache at the end of the array/list.<br>
+     * If the previous value does not exist then, it creates a new array<br>
      * If the previous value is not an array then, it throws an exception<br>
      * <b>Note:</b> This operation is not atomic<br>
      * <b>Example:</b><br>
@@ -412,9 +431,9 @@ class CacheOne
      * @param mixed        $value         This value shouldn't be serialized because the class serializes it.
      * @param int|null     $duration      In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
      *                                    It is ignored when type="documentone".
-     * @param int          $limit         If zero, then it does not limit the values stored into the array.<br>
+     * @param int          $limit         If zero, then it does not limIf the values stored into the array.<br>
      *                                    If the value is not zero and the number of elements of the array surprases
-     *                                    this limit, then it trim the first value and it adds a new value at the end
+     *                                    this limit, then it trims the first value, and it adds a new value at the end
      *                                    of the list.
      * @param string       $limitStrategy =['nonew','popold','shiftold'][$i] // default is shiftold<br>
      *                                    nonew = it does not add a new element if the limit is reached<br>
@@ -422,21 +441,33 @@ class CacheOne
      *                                    popold = if the limit is reached then it removes the last element<br>
      *
      * @return array|bool
+     * @throws Exception
      */
     public function push($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'shiftold')
     {
         return $this->executePushUnShift('push', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
 
+    /**
+     * @param $type
+     * @param $groups
+     * @param $key
+     * @param $value
+     * @param $duration
+     * @param $limit
+     * @param $limitStrategy
+     * @return array|bool
+     * @throws Exception
+     */
     protected function executePushUnShift($type, $groups, $key, $value, $duration = null, $limit = 0
-        , $limitStrategy = 'shiftold')
+        ,                                 $limitStrategy = 'shiftold')
     {
         if (!$this->enabled) {
             return false;
         }
         $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
         $originalArray = $this->service->get($key, []);
-        $originalArray = $originalArray === null ? [] : $originalArray;
+        $originalArray = $originalArray ?? [];
         if (!is_array($originalArray)) {
             throw new RuntimeException('[CacheOne] unable to push cache, the value stored is not an array 
             or setSerializer is not set');
@@ -453,22 +484,21 @@ class CacheOne
             }
         }
         if ($type === 'push') {
+            /** @noinspection UnsupportedStringOffsetOperationsInspection */
             $originalArray[] = $value;
         } else {
             array_unshift($originalArray, $value);
         }
         if (count($groups) === 0) {
-            trigger_error('CacheOne: set must have a non empty group of a empty array');
-            return false;
+            throw new RuntimeException('CacheOne: set must have a non empty group of a empty array');
         }
         $uid = $this->genId($key);
-        return $this->service->set($uid, $groups, $key, $originalArray, isset($duration)
-            ? $duration : $this->defaultTTL);
+        return $this->service->set($uid, $groups, $key, $originalArray, $duration ?? $this->defaultTTL);
     }
 
     /**
-     * It push a new value into the cache at the beginer of the array/list.<br>
-     * If the previous value does not exists then, it creates a new array<br>
+     * It pushes a new value into the cache at the beginer of the array/list.<br>
+     * If the previous value does not exist then, it creates a new array<br>
      * If the previous value is not an array then, it throws an exception<br>
      * <b>Note:</b> This operation is not atomic<br>
      * <b>Example:</b><br>
@@ -487,9 +517,9 @@ class CacheOne
      * @param mixed        $value         This value shouldn't be serialized because the class serializes it.
      * @param int|null     $duration      In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
      *                                    It is ignored when type="documentone".
-     * @param int          $limit         If zero, then it does not limit the values stored into the array.<br>
+     * @param int          $limit         If zero, then it does not limIf the values stored into the array.<br>
      *                                    If the value is not zero and the number of elements of the array surprases
-     *                                    this limit, then it trim the first value and it adds a new value at the end
+     *                                    this limit, then it trims the first value, and it adds a new value at the end
      *                                    of the list.
      * @param string       $limitStrategy =['nonew','popold','shiftold'][$i] // default is shiftold<br>
      *                                    nonew = it does not add a new element if the limit is reached<br>
@@ -497,6 +527,8 @@ class CacheOne
      *                                    popold = if the limit is reached then it removes the last element<br>
      *
      * @return array|bool
+     * @throws Exception
+     * @throws Exception
      */
     public function unshift($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'popold')
     {
@@ -505,9 +537,9 @@ class CacheOne
 
     /**
      * It pops a value at the end of the array.<br>
-     * It the array does not exists then it returns $defaultValue<br>
-     * It the array is empty then it returns null<br>
-     * The original array is modified (it is removed the element that it was pop'ed<br>
+     * If the array does not exist then it returns $defaultValue<br>
+     * If the array is empty then it returns null<br>
+     * The original array is modified (it is removed the element that it was pop'ed)<br>
      * <b>Example:</b><br>
      * <pre>
      * $element=$this->pop('','cart');
@@ -523,6 +555,8 @@ class CacheOne
      * @param int|null     $duration     In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
      *                                   It is ignored when type="documentone".
      * @return false|mixed|string|null
+     * @throws Exception
+     * @throws Exception
      */
     public function pop($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
     {
@@ -536,6 +570,8 @@ class CacheOne
      * @param mixed        $defaultValue
      * @param int|null     $duration
      * @return bool|int|mixed|string|null
+     * @throws Exception
+     * @throws Exception
      */
     protected function executePopShift($type, $group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
     {
@@ -554,16 +590,15 @@ class CacheOne
         }
         $final = $type === 'pop' ? array_pop($originalArray) : array_shift($originalArray);
         $uid = $this->genId($key);
-        $rs = $this->service->set($uid, $group, $key, $originalArray, isset($duration)
-            ? $duration : $this->defaultTTL);
+        $rs = $this->service->set($uid, $group, $key, $originalArray, $duration ?? $this->defaultTTL);
         return $rs === false ? $defaultValue : $final;
     }
 
     /**
-     * It shift (extract) a value at the beginner of the array.<br>
-     * It the array does not exists then it returns $defaultValue<br>
-     * It the array is empty then it returns null<br>
-     * The original array is modified (it is removed the element that it was pop'ed<br>
+     * It shifts (extract) a value at the beginner of the array.<br>
+     * If the array does not exist then it returns $defaultValue<br>
+     * If the array is empty then it returns null<br>
+     * The original array is modified (it is removed the element that it was pop'ed)<br>
      * <b>Example:</b><br>
      * <pre>
      * $element=$this->shift('','cart');
@@ -579,6 +614,8 @@ class CacheOne
      * @param int|null     $duration     In seconds. 0 means unlimited. Default (null) is 1440, 24 minutes.<br>
      *                                   It is ignored when type="documentone".
      * @return false|mixed|string|null
+     * @throws Exception
+     * @throws Exception
      */
     public function shift($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
     {
@@ -590,7 +627,7 @@ class CacheOne
      *
      * @return int (in seconds)
      */
-    public function getDefaultTTL()
+    public function getDefaultTTL(): int
     {
         return $this->defaultTTL;
     }
@@ -599,7 +636,7 @@ class CacheOne
      * @param int $ttl number in seconds of the time to live. Zero means unlimited.
      * @return $this
      */
-    public function setDefaultTTL($ttl)
+    public function setDefaultTTL($ttl): CacheOne
     {
         $this->defaultTTL = $ttl;
         return $this;
@@ -610,7 +647,7 @@ class CacheOne
      * @param $value
      * @return $this
      */
-    public function setDefaultValue($value)
+    public function setDefaultValue($value): CacheOne
     {
         $this->defaultValue = $value;
         return $this;
@@ -632,8 +669,7 @@ class CacheOne
             case 'none':
                 return $input;
             default:
-                trigger_error("serialize $this->serializer not defined");
-                return '';
+                throw new RuntimeException("serialize $this->serializer not defined");
         }
     }
 
@@ -644,10 +680,12 @@ class CacheOne
      * @param string $family
      *
      * @return bool
+     * @throws Exception
+     * @throws Exception
      * @see \eftec\CacheOne::invalidate
      *
      */
-    public function invalidateCache($uid = '', $family = '')
+    public function invalidateCache($uid = '', $family = ''): bool
     {
         return $this->invalidate($family, $uid);
 
@@ -666,16 +704,13 @@ class CacheOne
      * @param string $key   Delete a single key
      *
      * @return bool
+     * @throws Exception
+     * @throws Exception
      */
-    public function invalidate($group = '', $key = '')
+    public function invalidate($group = '', $key = ''): bool
     {
         return $this->service->invalidate($group, $key);
     }
 
-    protected function resetStack()
-    {
-        $this->defaultTTL = 1440;
-        $this->defaultValue = false;
-    }
 
 }

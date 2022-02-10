@@ -38,7 +38,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         }
     }
 
-    public function invalidateGroup($group)
+    public function invalidateGroup($group) : bool
     {
         $count = 0;
         if ($this->memcache !== null) {

@@ -16,15 +16,15 @@ interface ICacheOneProvider
      * @param array $group
      * @return boolean
      */
-    public function invalidateGroup($group);
+    public function invalidateGroup($group) : bool;
 
     public function invalidateAll();
 
     /**
      * @param string $key          The key of the value to read.
      * @param mixed  $defaultValue The default value (if the key is not found)
-     * @return mixed               The result, if setSerializer() is set then it could returns a variable.<br>
-     *                             If setSerializer() is not set, then it will returns a string.
+     * @return mixed               The result, if setSerializer() is set then it could return a variable.<br>
+     *                             If setSerializer() is not set, then it will return a string.
      */
     public function get($key, $defaultValue = false);
 

@@ -6,18 +6,19 @@
 namespace eftec\provider;
 
 use eftec\CacheOne;
+use eftec\PdoOne;
 use Exception;
-use Redis;
+use eftec;
 
-class CacheOneProviderRedis implements ICacheOneProvider
+class CacheOneProviderPdoOne implements ICacheOneProvider
 {
-    /** @var null|Redis */
-    private $redis;
+    /** @var null|PdoOne */
+    private $pdoOne;
     /** @var null|CacheOne */
     private $parent;
 
     /**
-     * AbstractCacheOneRedis constructor.
+     * AbstractCacheOnePdoOne constructor.
      *
      * @param CacheOne $parent
      * @param string   $server
@@ -38,60 +39,59 @@ class CacheOneProviderRedis implements ICacheOneProvider
     ) {
         $this->parent = $parent;
 
-        $this->redis = new Redis();
-        $port = (!$port) ? 6379 : $port;
-        try {
-            $r = @$this->redis->pconnect($server, $port, $timeout, null, $retry, $readTimeout);
-        } catch (Exception $e) {
-            $this->redis = null;
-            $this->parent->enabled = false;
-            return;
-        }
-        if ($r === false) {
-            $this->redis = null;
-            $this->parent->enabled = false;
-            return;
-        }
+        $this->pdoOne = PdoOne::instance(true);
 
         $this->parent->schema = $schema;
         $this->parent->enabled = true;
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidateGroup($group) : bool
     {
         $numDelete = 0;
-        if ($this->redis !== null) {
+        if ($this->pdoOne !== null) {
             foreach ($group as $nameGroup) {
                 $guid = $this->parent->genCatId($nameGroup);
-                $cdumplist = $this->parent->unserialize(@$this->redis->get($guid)); // it reads the catalog
+                $cdumplist = $this->parent->unserialize(@$this->pdoOne->getKV($guid)); // it reads the catalog
                 $cdumplist = (is_object($cdumplist)) ? (array)$cdumplist : $cdumplist;
                 if (is_array($cdumplist)) {
                     $keys = array_keys($cdumplist);
                     foreach ($keys as $key) {
-                        $numDelete += @$this->redis->del($key);
+                        $numDelete += @$this->pdoOne->delKV($key);
                     }
                 }
-                @$this->redis->del($guid); // delete the catalog
+                @$this->pdoOne->delKV($guid); // delete the catalog
             }
         }
         return $numDelete > 0;
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidateAll()
     {
-        if ($this->redis === null) {
+        if ($this->pdoOne === null) {
             return false;
         }
-        return $this->redis->flushDB();
+        return $this->pdoOne->flushKV();
     }
 
+    /**
+     * @throws Exception
+     */
     public function get($key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
-        $r = $this->parent->unserialize($this->redis->get($uid));
+        $r = $this->parent->unserialize($this->pdoOne->getKV($uid));
         return $r === false ? $defaultValue : $r;
     }
 
+    /**
+     * @throws Exception
+     */
     public function set($uid, $groups, $key, $value, $duration = 1440)
     {
         $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
@@ -103,7 +103,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
         if ($groupID !== '') {
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
-                $cat = $this->parent->unserialize(@$this->redis->get($catUid));
+                $cat = $this->parent->unserialize(@$this->pdoOne->getKV($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
                 if ($cat === false) {
                     $cat = array(); // created a new catalog
@@ -112,7 +112,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
                     // garbage collector of the catalog. We run it around every 20th reads.
                     $keys = array_keys($cat);
                     foreach ($keys as $keyf) {
-                        if (!$this->redis->exists($keyf)) {
+                        if (!$this->pdoOne->existKV($keyf)) {
                             unset($cat[$keyf]);
                         }
                     }
@@ -121,27 +121,30 @@ class CacheOneProviderRedis implements ICacheOneProvider
                 $catDuration = (($duration === 0 || $duration > $this->parent->catDuration)
                     && $this->parent->catDuration !== 0)
                     ? $duration : $this->parent->catDuration;
-                @$this->redis->set($catUid, $this->parent->serialize($cat), $catDuration); // we store the catalog back.
+                @$this->pdoOne->setKV($catUid, $this->parent->serialize($cat), $catDuration); // we store the catalog back.
             }
         }
         if ($duration === 0) {
-            return $this->redis->set($uid, $this->parent->serialize($value)); // infinite duration
+            return $this->pdoOne->setKV($uid, $this->parent->serialize($value)); // infinite duration
         }
-        return $this->redis->set($uid, $this->parent->serialize($value), $duration);
+        return $this->pdoOne->setKV($uid, $this->parent->serialize($value), $duration);
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidate($group = '', $key = '')
     {
         $uid = $this->parent->genId($key);
-        if ($this->redis === null) {
+        if ($this->pdoOne === null) {
             return false;
         }
-        $num = $this->redis->del($uid);
+        $num = $this->pdoOne->delKV($uid);
         return ($num > 0);
     }
-    
+
     public function select($dbindex) {
-        $this->redis->select($dbindex);
+        $this->pdoOne->setKvDefaultTable($dbindex);
     }
 
 }

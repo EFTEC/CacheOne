@@ -1,4 +1,5 @@
-<?php /** @noinspection PhpMissingReturnTypeInspection */
+<?php /** @noinspection PhpMissingParamTypeInspection */
+/** @noinspection PhpMissingReturnTypeInspection */
 /** @noinspection ReturnTypeCanBeDeclaredInspection */
 
 /** @noinspection PhpComposerExtensionStubsInspection */
@@ -12,7 +13,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
 
     /** @var null|CacheOne */
     private $parent;
-    
+
 
     /**
      * AbstractCacheOneRedis constructor.
@@ -34,7 +35,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
      * @param array $group
      * @return bool
      */
-    public function invalidateGroup($group)
+    public function invalidateGroup($group) : bool
     {
         $count = 0;
         if ($this->parent->enabled) {
@@ -110,6 +111,6 @@ class CacheOneProviderAPCU implements ICacheOneProvider
 
     public function select($dbindex)
     {
-        
+
     }
 }

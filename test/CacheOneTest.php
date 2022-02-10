@@ -1,4 +1,4 @@
-<?php 
+<?php
 /** @noinspection PhpUndefinedClassInspection */
 /** @noinspection PhpUnhandledExceptionInspection */
 /** @noinspection SqlNoDataSourceInspection */
@@ -10,6 +10,8 @@ namespace eftec\tests;
 
 use eftec\CacheOne;
 
+use eftec\PdoOne;
+use Exception;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use stdClass;
@@ -18,7 +20,8 @@ class CacheOneTest extends TestCase
 {
 	/** @var CacheOne */
     protected $cacheOne;
-    public function test_noconnect() {
+    public function test_noconnect(): void
+    {
         $cache=new CacheOne('memcache','127.0.0.1','',11212);
 
         self::assertEquals(false,$cache->enabled);
@@ -26,7 +29,7 @@ class CacheOneTest extends TestCase
         self::assertEquals(false,$cache->enabled);
         self::assertEquals('php',$cache->getSerializer());
     }
-    public function test_notfound()
+    public function test_notfound(): void
     {
         $cache = (new CacheOne('redis', '127.0.0.1', 'test'))->setSerializer('php');
 
@@ -39,7 +42,8 @@ class CacheOneTest extends TestCase
         self::assertEquals([123], $cache->get('','notfound2'));
 
     }
-    public function test_push() {
+    public function test_push(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
 
         self::assertEquals(true,$cache->set('','item',[1,2,3],123));
@@ -70,50 +74,60 @@ class CacheOneTest extends TestCase
         self::assertEquals(20,$cache->pop('','item'));
         self::assertEquals(null,$cache->pop('','item'));
     }
-    public function test_push_error1() {
+    public function test_push_error1(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
         $this->expectException(RuntimeException::class);
         $cache->push('','item',4,null,5);
     }
-    public function test_push_error2() {
+    public function test_push_error2(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
         $this->expectException(RuntimeException::class);
         $cache->pop('','item');
     }
-    public function test_push_error3() {
+    public function test_push_error3(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
         $this->expectException(RuntimeException::class);
         $cache->shift('','item');
         $cache->unshift('','item',4,null,5);
     }
-    public function test_push_error4() {
+    public function test_push_error4(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         self::assertEquals(true,$cache->set('','item','hello',123));
         $this->expectException(RuntimeException::class);
         $cache->unshift('','item',4,null,5);
     }
-    public function test_set_error4() {
+    public function test_set_error4(): void
+    {
         $cache=(new CacheOne('redis','127.0.0.1','test'))->setSerializer('php');
         $this->expectException(RuntimeException::class);
         $cache->set([],'item','hello',123);
     }
 
     /** @noinspection PhpSameParameterValueInspection */
-    private function runMe($type, $schema, $serializer='php', $server='127.0.0.1')  {
+    private function runMe($type, $schema, $serializer='php', $server='127.0.0.1'): void
+    {
         $cache=new CacheOne($type,$server,$schema);
         $cache->setSerializer($serializer);
-        $cache->select(0);
+        if($type==='pdoone') {
+            $cache->select('KVTABLA');
+        } else {
+            $cache->select(0);
+        }
         $cache->invalidateAll();
-        
+
         // wrapper test
         self::assertEquals(true,$cache->setCache("key1","family","hello world"));
         self::assertEquals("hello world",$cache->getCache("key1","family"));
         self::assertEquals(true,$cache->invalidateCache("key1","family"));
         self::assertEquals(false,$cache->getCache("key1","family"));
-        
+
         self::assertEquals(true,$cache->set("group","key1","hello world"));
         self::assertEquals(true,$cache->set("group","key1","hello world"));
 
@@ -121,7 +135,7 @@ class CacheOneTest extends TestCase
         $complex=[$complex,$complex];
         self::assertEquals(true,$cache->set("group","complex",$complex));
         self::assertEquals($complex,$cache->get("group","complex"));
-        
+
 
         self::assertEquals(true,$cache->set("group","key2","hola mundo"));
         self::assertEquals('hello world',$cache->get("group","key1"));
@@ -147,7 +161,8 @@ class CacheOneTest extends TestCase
         self::assertEquals(true,$cache->set("group","key4","hello world"));
 
     }
-    public function test_cast() {
+    public function test_cast(): void
+    {
         $origin=new stdClass();
         $origin->field="20";
         $template=new stdClass();
@@ -161,21 +176,21 @@ class CacheOneTest extends TestCase
         self::assertEquals($compare,$origin);
     }
 
-    public function test_redis()
+    public function test_redis(): void
     {
         $type='redis';
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
-        
+
     }
-    public function test_redis_json()
+    public function test_redis_json(): void
     {
         $type='redis';
         $this->runMe($type,'unittest','json-array');
         $this->runDuration($type,'unittest');
 
     }
-    public function test_apcu()
+    public function test_apcu(): void
     {
         // if not, then test fails because it considers the timestamp of execution of php
         ini_set("apc.use_request_time", 0);
@@ -183,8 +198,31 @@ class CacheOneTest extends TestCase
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
     }
+    public function test_pdoone(): void
+    {
+        $pdo=new PdoOne('mysql','127.0.0.1','root','abc.123','travisdb');
+        $pdo->logLevel=3;
+        $pdo->open();
+        $pdo->setKvDefaultTable('KVTABLA');
+        try {
+            $this->assertEquals(true, $pdo->dropTableKV());
 
-    public function test_document()
+        } catch(Exception $ex) {
+            var_dump('warning:'.$ex->getMessage());
+            var_dump('table not deleted');
+        }
+        try {
+            $pdo->createTableKV();
+        } catch(Exception $ex) {
+            var_dump('warning:'.$ex->getMessage());
+            var_dump('table not created');
+        }
+
+        $type='pdoone';
+        $this->runMe($type,'unittest');
+        $this->runDuration($type,'unittest');
+    }
+    public function test_document(): void
     {
         // if not, then test fails because it considers the timestamp of execution of php
         ini_set("apc.use_request_time", 0);
@@ -192,29 +230,34 @@ class CacheOneTest extends TestCase
         $this->runMe($type,'unittest','php',__DIR__.'/mem');
         $this->runDuration($type,'unittest',__DIR__.'/mem');
     }
-    
-    public function test_auto()
+
+    public function test_auto(): void
     {
         $this->runMe('auto','unittest');
         $this->runDuration('auto','unittest');
     }
-    public function test_memcache()
+    public function test_memcache(): void
     {
         $type='memcache';
         $this->runMe($type,'unittest');
         $this->runDuration($type,'unittest');
     }
-    public function runDuration($type,$schema,$server='127.0.0.1') {
+    public function runDuration($type,$schema,$server='127.0.0.1'): void
+    {
         $cache=new CacheOne($type,$server,$schema);
-        $cache->setDefaultTTL(1);
-        $cache->select(0);
+        $cache->setDefaultTTL(1)->setDefaultValue(false);
+        if($type==='pdoone') {
+            $cache->select('KVTABLA');
+        } else {
+            $cache->select(0);
+        }
         $cache->invalidateAll();
         $cache->set('group','key','hello world',1);
         self::assertEquals('hello world',$cache->get('group','key'));
         sleep(2); // expires
         self::assertEquals(false,$cache->get('group','key'));
-        
-        
+
+
         $cache->invalidateAll();
         $cache->set('group','key1','hello world',4); // each key expires in 4 seconds
         $cache->set('group','key2','hello world',4);
@@ -226,8 +269,8 @@ class CacheOneTest extends TestCase
         self::assertEquals(false,$cache->get('group','key2'));
         self::assertEquals(false,$cache->get('group','key3'));
 
-        
-        
+
+
     }
 
 }
