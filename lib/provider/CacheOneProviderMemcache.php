@@ -38,7 +38,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         }
     }
 
-    public function invalidateGroup($group) : bool
+    public function invalidateGroup(array $group) : bool
     {
         $count = 0;
         if ($this->memcache !== null) {
@@ -58,7 +58,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $count > 0;
     }
 
-    public function invalidateAll()
+    public function invalidateAll() : bool
     {
         if($this->memcache===null) {
             return false;
@@ -66,7 +66,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return @$this->memcache->flush();
     }
 
-    public function get($key, $defaultValue = false)
+    public function get(string $key, $defaultValue = false)
     {
         if ($this->memcache === null) {
             return false;
@@ -76,7 +76,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $v === false ? $defaultValue : $v;
     }
 
-    public function set( $uid, $groups, $key, $value, $duration = 1440)
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
     {
         if (count($groups) === 0) {
             trigger_error('[CacheOne]: set group must contains at least one element');
@@ -100,7 +100,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
                     }
                 }
                 $cat[$uid] = 1;
-                // the duration of the catalog is 0 (infinite) or the maximum value between the 
+                // the duration of the catalog is 0 (infinite) or the maximum value between the
                 // default duration and the duration of the key
                 $catDuration = (($duration === 0 || $duration > $this->parent->catDuration) && $this->parent->catDuration !== 0)
                     ? $duration : $this->parent->catDuration;
@@ -111,13 +111,13 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $this->memcache->set($uid, $value, 0, $duration);
     }
 
-    public function invalidate($group = '', $key = '')
+    public function invalidate(string $group = '', string $key = '') : bool
     {
         $uid = $this->parent->genId($key);
         return @$this->memcache->delete($uid);
     }
 
-    public function select($dbindex)
+    public function select($dbindex) : void
     {
     }
 }

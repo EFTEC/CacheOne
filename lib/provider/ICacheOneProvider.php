@@ -1,6 +1,5 @@
-<?php /** @noinspection PhpMissingReturnTypeInspection */
+<?php
 
-/** @noinspection PhpMissingParamTypeInspection */
 
 namespace eftec\provider;
 
@@ -16,9 +15,9 @@ interface ICacheOneProvider
      * @param array $group
      * @return boolean
      */
-    public function invalidateGroup($group) : bool;
+    public function invalidateGroup(array $group) : bool;
 
-    public function invalidateAll();
+    public function invalidateAll() : bool;
 
     /**
      * @param string $key          The key of the value to read.
@@ -26,11 +25,28 @@ interface ICacheOneProvider
      * @return mixed               The result, if setSerializer() is set then it could return a variable.<br>
      *                             If setSerializer() is not set, then it will return a string.
      */
-    public function get($key, $defaultValue = false);
+    public function get(string $key, $defaultValue = false);
 
-    public function set($uid, $groups, $key, $value, $duration = 1440);
+    /**
+     * @param string $uid
+     * @param array  $groups
+     * @param string $key
+     * @param mixed  $value
+     * @param int    $duration
+     * @return bool
+     */
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool;
 
-    public function invalidate($group = '', $key = '');
+    /**
+     * @param string $group
+     * @param string $key
+     * @return bool
+     */
+    public function invalidate(string $group = '', string $key = '') : bool;
 
-    public function select($dbindex);
+    /**
+     * @param string|int $dbindex
+     * @return void
+     */
+    public function select($dbindex) : void;
 }

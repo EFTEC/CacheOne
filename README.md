@@ -23,7 +23,7 @@ or an entire group of elements.
   * [invalidate a key](#invalidate-a-key)
   * [invalidate a group](#invalidate-a-group)
   * [invalidate all](#invalidate-all)
-  * [Select a database (Redis)](#select-a-database--redis-)
+  * [Select a database (Redis/PdoOne)](#select-a-database-redispdoone)
 - [Version](#version)
 - [License](#license)
 
@@ -53,7 +53,7 @@ var_dump($countries);
 
 ## Creating a new instance of CacheOne
 
-Creates a new connection using redis
+Creates a new connection using Redis (Redis is an on memory cache library)
 
 ```php
 use eftec\CacheOne;
@@ -61,7 +61,7 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("redis","127.0.0.1","",6379);
 ```
 
-Creates a new connection using apcu
+Creates a new connection using apcu (APCU is a extension for PHP to cache content)
 
 ```php
 use eftec\CacheOne;
@@ -69,7 +69,7 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("apcu");
 ```
 
-Creates a new connection using PdoOne
+Creates a new connection using **PdoOne** (PdoOne is a library to connect to the database using PDO)
 
 ```php
 use eftec\PdoOne;
@@ -84,9 +84,7 @@ $pdo->createTableKV();  // optional, create the key-value table (it throws an ex
 $cache=new CacheOne("pdoone"); // the instance $pdo is injected automatically into CacheOne.
 ```
 
-
-
-Creates a new connection using memcache
+Creates a new connection using memcache (Memcache is an old but still function memory cache server)
 
 ```php
 use eftec\CacheOne;
@@ -162,7 +160,7 @@ Syntax:
 
 * **$Limit** is used to limit the number maximum of elements of the array, if zero, then it does not limit the elements.
 * **$LimitStrategy** is used to determine what to do when we are adding a new element and the limit has been reached, 
-**shiftold** removes the first element of the array, **nonew** does not allow to add a new element, **popold** removes the latest element of the array
+  **shiftold** removes the first element of the array, **nonew** does not allow to add a new element, **popold** removes the latest element of the array
   (if the limit has been reached).
 
 ```php
@@ -248,7 +246,13 @@ $cache->invalidateGroup(["group1","group2"]); // invalidate all key inside group
 
 > invalidateAll()
 
-It invalidates (and delete all the redis repository, memcache, pdoone or apcu)
+It invalidates all cache.
+
+In **redis**, it deletes the current schema. If not schema, then it deletes all Redis
+
+In **memcached** and <b>apcu</b>, it deletes all cache
+
+In <b>documentone</b> it deletes the content of the database-folder
 
 ```php
 $cache->invalidateAll(); 
@@ -256,12 +260,12 @@ $cache->invalidateAll();
 
 ## setSerializer($serializer)
 
-It sets how the values are serialized.  By default it's PHP.
+It sets how the values are serialized.  By default, it's PHP.
 
 ```php
-$cache->setSerializer('php'); // set the serializer to php (default value)
-$cache->setSerializer('json-array'); // set the serializer to json-array
-$cache->setSerializer('json-object'); // set the serializer to json-object
+$cache->setSerializer('php'); // set the serializer to php (default value). It is fastest but it uses more space.
+$cache->setSerializer('json-array'); // set the serializer to json-array. It uses fewer space than PHP however it is a bit slower.
+$cache->setSerializer('json-object'); // set the serializer to json-object.
 $cache->setSerializer('none'); // set the serializer to none (the value must be serialized)
  
 ```
@@ -273,6 +277,7 @@ Get then how the values are serialized.
 ```php
 $type=$cache->getSerializer(); // get php,json-array,json-object or none
 ```
+
 
 
 
@@ -289,9 +294,13 @@ $cache->select('table'); // PdoOne
 
 # Version
 
+* 2.9 2022-03-12
+  * Cleared some references and added type hinting to the code. 
+  * In Redis: invalidateAll() does not delete all the server if there is a schema.
+  * in PdoOne: set() does not crash in PHP 8.1 if the catalog is null.
 * 2.8 2022-02-10
   * Added a new provider PdoOne (Pdo / Database).
-  * Dropped support for PHP 7.1 and lower. If you can use PHP 2.7 if you want support.
+  * Dropped support for PHP 7.1 and lower. If you want to use an old version of this library then you can stay with the version 2.7.
 - 2.7 2021-06-13
   * method get() used by provider, never needed the family/group, so it is removed. It is the last version for 2.7
 - 2.6.1 2021-06-12
@@ -328,4 +337,4 @@ $cache->select('table'); // PdoOne
 
 # License
 
-MIT License. Copyright Jorge Castro Castillo
+Dual license, Commercial and MIT License. Copyright Jorge Castro Castillo

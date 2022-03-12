@@ -57,7 +57,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
         $this->parent->enabled = true;
     }
 
-    public function invalidateGroup($group) : bool
+    public function invalidateGroup(array $group) : bool
     {
         $numDelete = 0;
         if ($this->redis !== null) {
@@ -77,24 +77,32 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $numDelete > 0;
     }
 
-    public function invalidateAll()
+    public function invalidateAll(): bool
     {
         if ($this->redis === null) {
             return false;
         }
-        return $this->redis->flushDB();
+        if($this->parent->schema) {
+            $keys = $this->redis->keys($this->parent->schema . ':*');
+        } else {
+            $keys = $this->redis->keys('*');
+        }
+        if ($keys)
+        {
+            return $this->redis->del($keys)!==0;
+        }
+        return false;
     }
 
-    public function get($key, $defaultValue = false)
+    public function get(string $key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize($this->redis->get($uid));
         return $r === false ? $defaultValue : $r;
     }
 
-    public function set($uid, $groups, $key, $value, $duration = 1440)
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440): bool
     {
-        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
         if (count($groups) === 0) {
             trigger_error('[CacheOne]: set group must contains at least one element');
             return false;
@@ -130,7 +138,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $this->redis->set($uid, $this->parent->serialize($value), $duration);
     }
 
-    public function invalidate($group = '', $key = '')
+    public function invalidate(string $group = '', string $key = ''): bool
     {
         $uid = $this->parent->genId($key);
         if ($this->redis === null) {
@@ -139,8 +147,9 @@ class CacheOneProviderRedis implements ICacheOneProvider
         $num = $this->redis->del($uid);
         return ($num > 0);
     }
-    
-    public function select($dbindex) {
+
+    public function select($dbindex) : void
+    {
         $this->redis->select($dbindex);
     }
 

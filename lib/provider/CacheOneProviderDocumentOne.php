@@ -1,4 +1,4 @@
-<?php /** @noinspection ReturnTypeCanBeDeclaredInspection */
+<?php
 
 /** @noinspection PhpMissingParamTypeInspection */
 
@@ -19,8 +19,8 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
      * CacheOneProviderDocumentOne constructor.
      *
      * @param CacheOne|null $parent
-     * @param string     $server      ip of the server.
-     * @param string     $schema      Default schema (optional).
+     * @param string     $server      root folder of the document server.
+     * @param string     $schema      Default folder schema (optional).
      */
     public function __construct($parent,$server,$schema)
     {
@@ -32,7 +32,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     }
 
-    public function invalidateGroup($group) : bool
+    public function invalidateGroup(array $group) : bool
     {
         $count = 0;
         if ($this->parent->enabled) {
@@ -52,7 +52,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         return $count > 0;
     }
 
-    public function invalidateAll()
+    public function invalidateAll() : bool
     {
         $keys=$this->documentOne->select('*',true);
         $r=true;
@@ -62,7 +62,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         return $r;
     }
 
-    public function get($key, $defaultValue = false)
+    public function get(string $key, $defaultValue = false)
     {
         try {
             $uid = $this->parent->genId($key);
@@ -79,7 +79,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         }
     }
 
-    public function set($uid, $groups, $key, $value, $duration = 1440)
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
     {
         if (count($groups) === 0) {
             trigger_error('[CacheOne]: set group must contains at least one element');
@@ -120,13 +120,13 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         return $this->documentOne->insertOrUpdate($uid, $value);
     }
 
-    public function invalidate($group = '', $key = '')
+    public function invalidate(string $group = '', string $key = '') : bool
     {
         $uid = $this->parent->genId($key);
         return @$this->documentOne->delete($uid);
     }
 
-    public function select($dbindex)
+    public function select($dbindex) : void
     {
     }
 }

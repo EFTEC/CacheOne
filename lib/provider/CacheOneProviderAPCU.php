@@ -1,6 +1,5 @@
 <?php /** @noinspection PhpMissingParamTypeInspection */
-/** @noinspection PhpMissingReturnTypeInspection */
-/** @noinspection ReturnTypeCanBeDeclaredInspection */
+
 
 /** @noinspection PhpComposerExtensionStubsInspection */
 
@@ -35,7 +34,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
      * @param array $group
      * @return bool
      */
-    public function invalidateGroup($group) : bool
+    public function invalidateGroup(array $group) : bool
     {
         $count = 0;
         if ($this->parent->enabled) {
@@ -57,21 +56,20 @@ class CacheOneProviderAPCU implements ICacheOneProvider
         return $count > 0;
     }
 
-    public function invalidateAll()
+    public function invalidateAll(): bool
     {
         return apcu_clear_cache();
     }
 
-    public function get($key, $defaultValue = false)
+    public function get(string $key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize(apcu_fetch($uid));
         return $r === false ? $defaultValue : $r;
     }
 
-    public function set($uid, $groups, $key, $value, $duration = 1440)
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
     {
-        $groups = (is_array($groups)) ? $groups : [$groups]; // transform a string groups into an array
         if (count($groups) === 0) {
             trigger_error('[CacheOne]: set group must contains at least one element');
             return false;
@@ -103,13 +101,13 @@ class CacheOneProviderAPCU implements ICacheOneProvider
         return apcu_store($uid, $this->parent->serialize($value), $duration);
     }
 
-    public function invalidate($group = '', $key = '')
+    public function invalidate(string $group = '', string $key = '') : bool
     {
         $uid = $this->parent->genId($key);
         return apcu_delete($uid);
     }
 
-    public function select($dbindex)
+    public function select($dbindex) : void
     {
 
     }

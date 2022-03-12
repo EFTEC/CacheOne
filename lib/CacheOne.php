@@ -1,9 +1,6 @@
-<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
+<?php
 /** @noinspection ClassConstantCanBeUsedInspection */
-/** @noinspection ReturnTypeCanBeDeclaredInspection */
-/** @noinspection PhpMissingParamTypeInspection */
 /** @noinspection PhpUnusedParameterInspection */
-
 /** @noinspection PhpComposerExtensionStubsInspection */
 
 namespace eftec;
@@ -23,10 +20,10 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.8
+ * @version  2.9
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
- * @license  MIT
+ * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
@@ -68,16 +65,16 @@ class CacheOne
      * @param int|null   $readTimeout Read timeout (in milliseconds). Zero means unlimited
      */
     public function __construct(
-        $type = 'auto',
-        $server = '127.0.0.1',
-        $schema = "",
-        $port = 0
+        string $type = 'auto',
+        string $server = '127.0.0.1',
+        string $schema = "",
+               $port = 0
         ,
-        $user = "",
-        $password = "",
-        $timeout = 8,
-        $retry = null,
-        $readTimeout = null
+        string $user = "",
+        string $password = "",
+        int    $timeout = 8,
+        int    $retry = null,
+        int    $readTimeout = null
     )
     {
         $this->type = $type;
@@ -121,7 +118,6 @@ class CacheOne
                     throw new RuntimeException('CacheOne: pdoone extension not installed or no instance is found');
                 }
                 return;
-
             case 'apcu':
                 if (extension_loaded('apcu')) {
                     $this->service = new CacheOneProviderAPCU($this, $schema);
@@ -153,7 +149,7 @@ class CacheOne
      * @return void
      * @throws Exception
      */
-    public static function fixCast(&$destination, $source)
+    public static function fixCast(&$destination, $source): void
     {
         if (is_array($source)) {
             if (count($destination) === 0) {
@@ -175,7 +171,6 @@ class CacheOne
                 if (is_object(@$destination->{$name})) {
                     if (get_class(@$destination->{$name}) === "DateTime") {
                         // source->name is a stdclass, not a DateTime, so we could read the value with the field date
-                        /** @noinspection PhpUnhandledExceptionInspection */
                         $destination->{$name} = new DateTime($source->$name->date);
                     } else {
                         self::fixCast($destination->{$name}, $source->$name);
@@ -190,11 +185,11 @@ class CacheOne
     /**
      * It changes the default database (0) for another one.  It's only for Redis and PdoOne
      *
-     * @param mixed $dbindex
+     * @param string|int $dbindex
      *
      * @see https://redis.io/commands/select
      */
-    public function select($dbindex)
+    public function select($dbindex): void
     {
         $this->service->select($dbindex);
     }
@@ -229,11 +224,11 @@ class CacheOne
 
     /**
      * @param             $input
-     * @param null|string $forcedSerializer =[null,'php','json-array','json-object','none'][$i]
+     * @param string|null $forcedSerializer =[null,'php','json-array','json-object','none'][$i]
      *
      * @return mixed
      */
-    public function unserialize($input, $forcedSerializer = null)
+    public function unserialize($input, string $forcedSerializer = null)
     {
         $forcedSerializer = $forcedSerializer ?? $this->serializer;
         switch ($forcedSerializer) {
@@ -252,7 +247,10 @@ class CacheOne
     }
 
     /**
-     * It invalidates all cache from the current database (redis) or all cache (for memcache and apcu)<br>
+     * It invalidates all cache<br>
+     * In <b>redis<b>, it deletes the current schema. If not schema, then it deletes all redis<br>
+     * In <b>memcached<b> and <b>apcu</b>, it deletes all cache<br>
+     * In <b>documentone</b> it deletes the content of the database-folder<br>
      * <pre>
      * $this->invalidateAll();
      * </pre>
@@ -268,7 +266,7 @@ class CacheOne
     /**
      * Wrappper of get()
      *
-     * @param string       $uid
+     * @param string       $key    Key of the cache to obtain.
      * @param string|array $family [not used] this value could be any value
      *
      * @return mixed
@@ -276,9 +274,9 @@ class CacheOne
      * @throws Exception
      * @see \eftec\CacheOne::getValue
      */
-    public function getCache($uid, $family = '')
+    public function getCache(string $key, $family = '')
     {
-        return $this->getValue($uid);
+        return $this->getValue($key);
     }
 
     /**
@@ -296,7 +294,7 @@ class CacheOne
      * @return mixed returns false if the value is not found, otherwise it returns the value.
      * @throws Exception
      */
-    public function getValue($key, $defaultValue = PHP_INT_MAX)
+    public function getValue(string $key, $defaultValue = PHP_INT_MAX)
     {
         $defaultValue = $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue;
         if (!$this->enabled) {
@@ -315,7 +313,7 @@ class CacheOne
      * @throws Exception
      * @see \eftec\CacheOne::getValue
      */
-    public function get($group, $key, $defaultValue = PHP_INT_MAX)
+    public function get($group, string $key, $defaultValue = PHP_INT_MAX)
     {
         // $this->resetStack();
         return $this->getValue($key, $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
@@ -334,7 +332,7 @@ class CacheOne
      *
      * @return CacheOne
      */
-    public function setSerializer($serializer): CacheOne
+    public function setSerializer(string $serializer): CacheOne
     {
         $this->serializer = $serializer;
         return $this;
@@ -343,18 +341,18 @@ class CacheOne
     /**
      * Wrapper of function set()
      *
-     * @param string       $uid
-     * @param string|array $family
-     * @param null         $data
-     * @param null         $ttl
+     * @param string       $key    Key of the cache to set a value
+     * @param string|array $family Family/group of the cache
+     * @param mixed        $data   data to set
+     * @param ?int         $ttl    time to live (in seconds), null means unlimited.
      *
      * @return bool
      * @throws Exception
      * @see \eftec\CacheOne::set
      */
-    public function setCache($uid, $family = '', $data = null, $ttl = null): bool
+    public function setCache(string $key, $family = '', $data = null, ?int $ttl = null): bool
     {
-        return $this->set($family, $uid, $data, $ttl);
+        return $this->set($family, $key, $data, $ttl);
     }
 
     /**
@@ -384,7 +382,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function set($groups, $key, $value, $duration = null): bool
+    public function set($groups, string $key, $value, ?int $duration = null): bool
     {
         if (!$this->enabled) {
             return false;
@@ -404,7 +402,7 @@ class CacheOne
      *
      * @return string
      */
-    public function genId($key): string
+    public function genId(string $key): string
     {
         $r = ($this->schema) ? $this->schema . $this->separatorUID : '';
         return $r . $key;
@@ -440,27 +438,27 @@ class CacheOne
      *                                    shiftold = if the limit is reached then it pops the first element<br>
      *                                    popold = if the limit is reached then it removes the last element<br>
      *
-     * @return array|bool
+     * @return bool
      * @throws Exception
      */
-    public function push($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'shiftold')
+    public function push($groups, string $key, $value, int $duration = null, int $limit = 0, string $limitStrategy = 'shiftold'): bool
     {
         return $this->executePushUnShift('push', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
 
     /**
-     * @param $type
-     * @param $groups
-     * @param $key
-     * @param $value
-     * @param $duration
-     * @param $limit
-     * @param $limitStrategy
-     * @return array|bool
+     * @param string       $type          =['push','unshift'][$i]
+     * @param string|array $groups
+     * @param string       $key
+     * @param mixed        $value
+     * @param int|null     $duration
+     * @param int          $limit
+     * @param string       $limitStrategy =['shiftold','nonew','popold'][$i]
+     * @return bool
      * @throws Exception
      */
-    protected function executePushUnShift($type, $groups, $key, $value, $duration = null, $limit = 0
-        ,                                 $limitStrategy = 'shiftold')
+    protected function executePushUnShift(string $type, $groups, string $key, $value, ?int $duration = null, int $limit = 0
+        , string                                 $limitStrategy = 'shiftold'): bool
     {
         if (!$this->enabled) {
             return false;
@@ -526,11 +524,10 @@ class CacheOne
      *                                    shiftold = if the limit is reached then it pops the first element<br>
      *                                    popold = if the limit is reached then it removes the last element<br>
      *
-     * @return array|bool
-     * @throws Exception
+     * @return bool
      * @throws Exception
      */
-    public function unshift($groups, $key, $value, $duration = null, $limit = 0, $limitStrategy = 'popold')
+    public function unshift($groups, string $key, $value, int $duration = null, int $limit = 0, string $limitStrategy = 'popold'): bool
     {
         return $this->executePushUnShift('unshift', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
@@ -558,7 +555,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function pop($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
+    public function pop($group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
     {
         return $this->executePopShift('pop', $group, $key, $defaultValue, $duration);
     }
@@ -573,7 +570,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    protected function executePopShift($type, $group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
+    protected function executePopShift(string $type, $group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
     {
         $defaultValue = $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue;
         if (!$this->enabled) {
@@ -590,6 +587,7 @@ class CacheOne
         }
         $final = $type === 'pop' ? array_pop($originalArray) : array_shift($originalArray);
         $uid = $this->genId($key);
+        $group = (!is_array($group)) ? [$group] : $group;
         $rs = $this->service->set($uid, $group, $key, $originalArray, $duration ?? $this->defaultTTL);
         return $rs === false ? $defaultValue : $final;
     }
@@ -617,7 +615,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function shift($group, $key, $defaultValue = PHP_INT_MAX, $duration = null)
+    public function shift($group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
     {
         return $this->executePopShift('shift', $group, $key, $defaultValue, $duration);
     }
@@ -636,7 +634,7 @@ class CacheOne
      * @param int $ttl number in seconds of the time to live. Zero means unlimited.
      * @return $this
      */
-    public function setDefaultTTL($ttl): CacheOne
+    public function setDefaultTTL(int $ttl): CacheOne
     {
         $this->defaultTTL = $ttl;
         return $this;
@@ -644,7 +642,7 @@ class CacheOne
 
     /**
      * It sets the default value.
-     * @param $value
+     * @param mixed $value
      * @return $this
      */
     public function setDefaultValue($value): CacheOne
@@ -654,7 +652,7 @@ class CacheOne
     }
 
     /**
-     * @param $input
+     * @param mixed $input
      *
      * @return false|string
      */
@@ -676,19 +674,17 @@ class CacheOne
     /**
      * Wrapper of function invalidate()
      *
-     * @param string $uid
-     * @param string $family
+     * @param string $key    key of the cache to invalidate.
+     * @param string $family family of the cache to invalidate.
      *
      * @return bool
-     * @throws Exception
      * @throws Exception
      * @see \eftec\CacheOne::invalidate
      *
      */
-    public function invalidateCache($uid = '', $family = ''): bool
+    public function invalidateCache(string $key = '', string $family = ''): bool
     {
-        return $this->invalidate($family, $uid);
-
+        return $this->invalidate($family, $key);
     }
 
     /**
@@ -707,7 +703,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function invalidate($group = '', $key = ''): bool
+    public function invalidate(string $group = '', string $key = ''): bool
     {
         return $this->service->invalidate($group, $key);
     }
