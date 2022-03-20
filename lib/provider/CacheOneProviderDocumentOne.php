@@ -31,6 +31,10 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         $this->documentOne->autoSerialize(true);
 
     }
+    public function getInstance(): DocumentStoreOne
+    {
+        return $this->documentOne;
+    }
 
     public function invalidateGroup(array $group) : bool
     {
@@ -67,8 +71,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         try {
             $uid = $this->parent->genId($key);
             $age = $this->documentOne->getTimeStamp($uid, true);
-            $defaultTTL = $this->parent->getDefaultTTL();
-            if ($age > $defaultTTL && $defaultTTL !== 0) {
+            if ($age>0 && $age<1000000000) { // anything <1000000000 means it never expires
                 // file expired.
                 $this->documentOne->delete($uid);
                 return false;
@@ -115,9 +118,16 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
                 //$catDuration = ($catDuration !== 0) ? time() + $catDuration : 0; // duration as timestamp
                 // $catUid, $cat, 0, $catDuration
                 $this->documentOne->insertOrUpdate($catUid,$cat); // we store the catalog.
+
             }
         }
-        return $this->documentOne->insertOrUpdate($uid, $value);
+        $r=$this->documentOne->insertOrUpdate($uid, $value);
+        if($duration===0) {
+            $this->documentOne->setTimeStamp($uid, 1, true);
+        } else {
+            $this->documentOne->setTimeStamp($uid, $duration, false);
+        }
+        return $r;
     }
 
     public function invalidate(string $group = '', string $key = '') : bool

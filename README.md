@@ -294,6 +294,13 @@ $cache->select('table'); // PdoOne
 
 # Version
 
+* 2.11 2022-03-20
+  * **[fixed]** added more type "hinting" (type validation) 
+  * **[new]** It allows to obtain an instance (if any) of CacheOne using the static method CacheOne::instance()
+  * **[new]** It allows to obtain an instance of the provider (PdoOne, DocumentStoreOne, Redis, Memcache) $this->getInstanceProvider()
+* 2.10 2022-03-15
+  * **[new]** method getRenew() that get a value and renews its duration.
+  * **[update]** Provider DocumentOne now works with TTL.
 * 2.9 2022-03-12
   * Cleared some references and added type hinting to the code. 
   * In Redis: invalidateAll() does not delete all the server if there is a schema.

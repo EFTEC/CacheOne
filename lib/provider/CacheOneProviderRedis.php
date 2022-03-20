@@ -1,5 +1,4 @@
-<?php /** @noinspection ReturnTypeCanBeDeclaredInspection */
-/** @noinspection PhpMissingParamTypeInspection */
+<?php
 
 /** @noinspection PhpComposerExtensionStubsInspection */
 
@@ -24,17 +23,17 @@ class CacheOneProviderRedis implements ICacheOneProvider
      * @param string   $schema
      * @param int      $port
      * @param int      $timeout
-     * @param null     $retry
-     * @param null     $readTimeout
+     * @param int|null $retry
+     * @param int|null $readTimeout
      */
     public function __construct(
-        $parent,
-        $server = '127.0.0.1',
-        $schema = "",
-        $port = 0,
-        $timeout = 8,
-        $retry = null,
-        $readTimeout = null
+        CacheOne $parent,
+        string   $server = '127.0.0.1',
+        string   $schema = "",
+        int      $port = 0,
+        int      $timeout = 8,
+        ?int $retry = null,
+        ?int $readTimeout = null
     ) {
         $this->parent = $parent;
 
@@ -52,9 +51,13 @@ class CacheOneProviderRedis implements ICacheOneProvider
             $this->parent->enabled = false;
             return;
         }
-
         $this->parent->schema = $schema;
         $this->parent->enabled = true;
+    }
+
+    public function getInstance(): ?object
+    {
+        return $this->redis;
     }
 
     public function invalidateGroup(array $group) : bool

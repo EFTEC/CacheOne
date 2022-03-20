@@ -1,6 +1,4 @@
-<?php /** @noinspection PhpMissingParamTypeInspection */
-/** @noinspection ReturnTypeCanBeDeclaredInspection */
-
+<?php
 /** @noinspection PhpComposerExtensionStubsInspection */
 
 namespace eftec\provider;
@@ -18,12 +16,12 @@ class CacheOneProviderMemcache implements ICacheOneProvider
     /**
      * CacheOneProviderMemcache constructor.
      *
-     * @param CacheOne $parent
-     * @param          $server
-     * @param          $port
-     * @param          $schema
+     * @param CacheOne    $parent
+     * @param string|null $server
+     * @param int|null    $port
+     * @param string|null $schema
      */
-    public function __construct($parent,$server,$port,$schema)
+    public function __construct(CacheOne $parent, ?string $server, ?int $port, ?string $schema)
     {
         $this->parent = $parent;
         $this->memcache = new Memcache();
@@ -38,7 +36,12 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         }
     }
 
-    public function invalidateGroup(array $group) : bool
+    public function getInstance(): ?Memcache
+    {
+        return $this->memcache;
+    }
+
+    public function invalidateGroup(array $group): bool
     {
         $count = 0;
         if ($this->memcache !== null) {
@@ -58,9 +61,9 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $count > 0;
     }
 
-    public function invalidateAll() : bool
+    public function invalidateAll(): bool
     {
-        if($this->memcache===null) {
+        if ($this->memcache === null) {
             return false;
         }
         return @$this->memcache->flush();
@@ -76,7 +79,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $v === false ? $defaultValue : $v;
     }
 
-    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
+    public function set(string $uid, array $groups, string $key, $value, int $duration = 1440): bool
     {
         if (count($groups) === 0) {
             trigger_error('[CacheOne]: set group must contains at least one element');
@@ -111,13 +114,13 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         return $this->memcache->set($uid, $value, 0, $duration);
     }
 
-    public function invalidate(string $group = '', string $key = '') : bool
+    public function invalidate(string $group = '', string $key = ''): bool
     {
         $uid = $this->parent->genId($key);
         return @$this->memcache->delete($uid);
     }
 
-    public function select($dbindex) : void
+    public function select($dbindex): void
     {
     }
 }

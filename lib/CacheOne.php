@@ -20,7 +20,7 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.9
+ * @version  2.11
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
@@ -50,6 +50,8 @@ class CacheOne
     private $serializer = 'php';
     /** @var mixed */
     private $defaultValue = false;
+    /** @var CacheOne used for singleton, method instance()*/
+    protected static $instance;
 
     /**
      * Open the cache
@@ -137,6 +139,22 @@ class CacheOne
             default:
                 throw new RuntimeException("CacheOne: type $this->type not defined");
         }
+        if (self::$instance === null) {
+            self::$instance = $this;
+        }
+    }
+    /**
+     * It returns the first instance created CacheOne or throw an error if the instance is not set.
+     * @param bool $throwIfNull if true and the instance is not set, then it throws an exception<br>
+     *                          if false and the instance is not set, then it returns null
+     * @return CacheOne|null
+     */
+    public static function instance(bool $throwIfNull = true): ?CacheOne
+    {
+        if (self::$instance === null && $throwIfNull) {
+            throw new RuntimeException('instance not created for CacheOne');
+        }
+        return self::$instance;
     }
 
     /**
@@ -192,6 +210,20 @@ class CacheOne
     public function select($dbindex): void
     {
         $this->service->select($dbindex);
+    }
+
+    /**
+     * It returns an instance of the provider used, so you can access directly to it.<br>
+     * <b>pdoone</b> Returns an object of the type PdoOne<br>
+     * <b>documentone</b> Returns an object of the type DocumentOne<br>
+     * <b>apcu</b> Returns null<br>
+     * <b>memcache</b> Returns an object of the type Memcache<br>
+     * <b>redis</b> Returns an object of the type Redis<br>
+     * @return object|null
+     */
+    public function getInstanceProvider(): ?object
+    {
+        return $this->service->getInstance();
     }
 
     /**
@@ -320,6 +352,25 @@ class CacheOne
     }
 
     /**
+     * It gets a key and renew the value if the value was found<br>
+     * It is useful to renew the duration of the cache while keeping the same value.
+     *
+     * @param string   $key
+     * @param int|null $duration
+     * @param mixed    $defaultValue
+     * @return mixed
+     * @throws Exception
+     */
+    public function getRenew(string $key, ?int $duration = null, $defaultValue = PHP_INT_MAX)
+    {
+        $r = $this->getValue($key, $defaultValue);
+        if ($r !== false) {
+            $this->set('', $key, $r, $duration); // it is already part of a group
+        }
+        return $r;
+    }
+
+    /**
      * @return string
      */
     public function getSerializer(): string
@@ -341,18 +392,18 @@ class CacheOne
     /**
      * Wrapper of function set()
      *
-     * @param string       $key    Key of the cache to set a value
-     * @param string|array $family Family/group of the cache
-     * @param mixed        $data   data to set
-     * @param ?int         $ttl    time to live (in seconds), null means unlimited.
+     * @param string       $key      Key of the cache to set a value
+     * @param string|array $family   Family/group of the cache
+     * @param mixed        $data     data to set
+     * @param ?int         $duration time to live (in seconds), null means unlimited.
      *
      * @return bool
      * @throws Exception
      * @see \eftec\CacheOne::set
      */
-    public function setCache(string $key, $family = '', $data = null, ?int $ttl = null): bool
+    public function setCache(string $key, $family = '', $data = null, ?int $duration = null): bool
     {
-        return $this->set($family, $key, $data, $ttl);
+        return $this->set($family, $key, $data, $duration);
     }
 
     /**
@@ -631,12 +682,12 @@ class CacheOne
     }
 
     /**
-     * @param int $ttl number in seconds of the time to live. Zero means unlimited.
+     * @param int $duration number in seconds of the time to live. Zero means unlimited.
      * @return $this
      */
-    public function setDefaultTTL(int $ttl): CacheOne
+    public function setDefaultTTL(int $duration): CacheOne
     {
-        $this->defaultTTL = $ttl;
+        $this->defaultTTL = $duration;
         return $this;
     }
 

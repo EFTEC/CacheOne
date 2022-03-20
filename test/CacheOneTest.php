@@ -110,17 +110,39 @@ class CacheOneTest extends TestCase
         $cache->set([],'item','hello',123);
     }
 
+    public function  runRenew(CacheOne $cache): void
+    {
+        self::assertEquals(true, $cache->set('', 'item', [1, 2, 3],3));
+        self::assertEquals(true, $cache->set('', 'item2', [1, 2, 3],3));
+        sleep(2);
+        self::assertEquals([1,2,3], $cache->getRenew('item', 3));
+        self::assertEquals([1,2,3], $cache->getValue('item2'));
+        sleep(2);
+        self::assertEquals([1,2,3], $cache->getValue('item'));
+        self::assertEquals(false, $cache->getValue('item2')); // this item expired.
+    }
+
+
     /** @noinspection PhpSameParameterValueInspection */
     private function runMe($type, $schema, $serializer='php', $server='127.0.0.1'): void
     {
+        var_dump('testing '.$type);
         $cache=new CacheOne($type,$server,$schema);
+
         $cache->setSerializer($serializer);
         if($type==='pdoone') {
             $cache->select('KVTABLA');
         } else {
             $cache->select(0);
         }
+
         $cache->invalidateAll();
+        $class=strtolower($cache->getInstanceProvider()===null ? '' :  get_class($cache->getInstanceProvider()));
+        if($type!=='apcu' && $type!=='documentone' && $type!=='auto') {
+            self::assertStringContainsString($type,$class);
+        }
+
+
 
         // wrapper test
         self::assertEquals(true,$cache->setCache("key1","family","hello world"));
@@ -159,6 +181,8 @@ class CacheOneTest extends TestCase
         self::assertEquals(true,$cache->set("group","key2","hello world"));
         self::assertEquals(true,$cache->set("group","key3","hello world"));
         self::assertEquals(true,$cache->set("group","key4","hello world"));
+
+        $this->runRenew($cache);
 
     }
     public function test_cast(): void
@@ -246,6 +270,7 @@ class CacheOneTest extends TestCase
     {
         $cache=new CacheOne($type,$server,$schema);
         $cache->setDefaultTTL(1)->setDefaultValue(false);
+        $this->assertEquals(1,$cache->getDefaultTTL());
         if($type==='pdoone') {
             $cache->select('KVTABLA');
         } else {

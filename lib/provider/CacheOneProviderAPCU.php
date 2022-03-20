@@ -1,6 +1,4 @@
-<?php /** @noinspection PhpMissingParamTypeInspection */
-
-
+<?php
 /** @noinspection PhpComposerExtensionStubsInspection */
 
 namespace eftec\provider;
@@ -21,13 +19,22 @@ class CacheOneProviderAPCU implements ICacheOneProvider
      * @param string   $schema
      */
     public function __construct(
-        $parent,
-        $schema = ""
+        CacheOne $parent,
+        string $schema = ""
     ) {
         $this->parent = $parent;
         $r = @apcu_sma_info();
         $this->parent->enabled = ($r !== false);
         $this->parent->schema = $schema;
+    }
+
+    /**
+     * @return null
+     * @noinspection ReturnTypeCanBeDeclaredInspection
+     */
+    public function getInstance()
+    {
+        return null;
     }
 
     /**

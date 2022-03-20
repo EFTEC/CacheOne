@@ -11,6 +11,7 @@ namespace eftec\provider;
  */
 interface ICacheOneProvider
 {
+    public function getInstance() ;
     /**
      * @param array $group
      * @return boolean

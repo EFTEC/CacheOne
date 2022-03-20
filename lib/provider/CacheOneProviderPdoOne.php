@@ -1,6 +1,4 @@
-<?php /** @noinspection ReturnTypeCanBeDeclaredInspection */
-/** @noinspection PhpMissingParamTypeInspection */
-
+<?php
 /** @noinspection PhpComposerExtensionStubsInspection */
 
 namespace eftec\provider;
@@ -25,31 +23,35 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
      * @param string   $schema
      * @param int      $port
      * @param int      $timeout
-     * @param null     $retry
-     * @param null     $readTimeout
+     * @param mixed    $retry
+     * @param int|null $readTimeout
      * @noinspection PhpUnusedParameterInspection
      */
     public function __construct(
-        $parent,
-        $server = '127.0.0.1',
-        $schema = "",
-        $port = 0,
-        $timeout = 8,
-        $retry = null,
-        $readTimeout = null
-    ) {
+        CacheOne $parent,
+        string   $server = '127.0.0.1',
+        string   $schema = "",
+        int      $port = 0,
+        int      $timeout = 8,
+                 $retry = null,
+        ?int     $readTimeout = null
+    )
+    {
         $this->parent = $parent;
-
         $this->pdoOne = PdoOne::instance(true);
-
         $this->parent->schema = $schema;
         $this->parent->enabled = true;
+    }
+
+    public function getInstance(): ?PdoOne
+    {
+        return $this->pdoOne;
     }
 
     /**
      * @throws Exception
      */
-    public function invalidateGroup(array $group) : bool
+    public function invalidateGroup(array $group): bool
     {
         $numDelete = 0;
         if ($this->pdoOne !== null) {
@@ -143,7 +145,7 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
         return ($num > 0);
     }
 
-    public function select($dbindex) : void
+    public function select($dbindex): void
     {
         $this->pdoOne->setKvDefaultTable($dbindex);
     }
