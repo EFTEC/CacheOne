@@ -294,6 +294,9 @@ $cache->select('table'); // PdoOne
 
 # Version
 
+* 2.12 2022-06-12
+  * **[fixed]** CacheOne now it could be injected correctly in any case.
+  * **[new]** **[redis]**  In Redis, the $schema is used to set the database (if numeric), or to prefix the values.
 * 2.11 2022-03-20
   * **[fixed]** added more type "hinting" (type validation) 
   * **[new]** It allows to obtain an instance (if any) of CacheOne using the static method CacheOne::instance()

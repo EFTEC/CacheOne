@@ -41,6 +41,13 @@ class CacheOneProviderRedis implements ICacheOneProvider
         $port = (!$port) ? 6379 : $port;
         try {
             $r = @$this->redis->pconnect($server, $port, $timeout, null, $retry, $readTimeout);
+            if(is_numeric($schema) || $schema===null) {
+                $this->redis->select($schema??0);
+                $this->redis->_prefix(null);
+            } else {
+                $this->redis->select(0);
+                $this->redis->_prefix($schema);
+            }
         } catch (Exception $e) {
             $this->redis = null;
             $this->parent->enabled = false;

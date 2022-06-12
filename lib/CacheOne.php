@@ -20,7 +20,7 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.11
+ * @version  2.12
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
@@ -50,7 +50,7 @@ class CacheOne
     private $serializer = 'php';
     /** @var mixed */
     private $defaultValue = false;
-    /** @var CacheOne used for singleton, method instance()*/
+    /** @var CacheOne used for singleton, method instance() */
     protected static $instance;
 
     /**
@@ -58,7 +58,8 @@ class CacheOne
      *
      * @param string     $type        =['auto','redis','memcache','apcu','pdoone','documentone'][$i]
      * @param string     $server      ip of the server.
-     * @param string     $schema      Default schema (optional).
+     * @param string     $schema      Default schema (optional).<br>
+     *                                In Redis, if it is a number, then it sets the database, otherwise is a prefix.
      * @param int|string $port        [optional] By default is 6379 (redis) and 11211 (memcached)
      * @param string     $user        (use future)
      * @param string     $password    (use future)
@@ -98,11 +99,12 @@ class CacheOne
                 if (class_exists("Redis")) {
                     $this->service = new CacheOneProviderRedis($this, $server, $schema, $port,
                         $timeout, $retry, $readTimeout);
-                    return;
+                } else {
+                    $this->service = null;
+                    $this->enabled = false;
+                    throw new RuntimeException('CacheOne: Redis extension not installed');
                 }
-                $this->service = null;
-                $this->enabled = false;
-                throw new RuntimeException('CacheOne: Redis extension not installed');
+                break;
             case 'memcache':
                 $this->separatorUID = '_';
                 if (class_exists("Memcache")) {
@@ -111,7 +113,7 @@ class CacheOne
                     $this->enabled = false;
                     throw new RuntimeException('CacheOne: memcache extension not installed');
                 }
-                return;
+                break;
             case 'pdoone':
                 if (PdoOne::instance(false) !== null) {
                     $this->service = new CacheOneProviderPdoOne($this, $schema);
@@ -119,7 +121,7 @@ class CacheOne
                     $this->enabled = false;
                     throw new RuntimeException('CacheOne: pdoone extension not installed or no instance is found');
                 }
-                return;
+                break;
             case 'apcu':
                 if (extension_loaded('apcu')) {
                     $this->service = new CacheOneProviderAPCU($this, $schema);
@@ -127,7 +129,7 @@ class CacheOne
                     $this->enabled = false;
                     throw new RuntimeException('CacheOne: apcu extension not installed');
                 }
-                return;
+                break;
             case 'documentone':
                 if (class_exists('\eftec\DocumentStoreOne\DocumentStoreOne')) {
                     $this->service = new CacheOneProviderDocumentOne($this, $server, $schema);
@@ -143,6 +145,7 @@ class CacheOne
             self::$instance = $this;
         }
     }
+
     /**
      * It returns the first instance created CacheOne or throw an error if the instance is not set.
      * @param bool $throwIfNull if true and the instance is not set, then it throws an exception<br>
@@ -533,7 +536,6 @@ class CacheOne
             }
         }
         if ($type === 'push') {
-            /** @noinspection UnsupportedStringOffsetOperationsInspection */
             $originalArray[] = $value;
         } else {
             array_unshift($originalArray, $value);
