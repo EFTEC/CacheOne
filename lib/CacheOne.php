@@ -20,13 +20,17 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.12
+ * @version  2.12.1
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
+    /** @var bool if true then it records every operation in $this::debugLog */
+    public $debug = false;
+    /** @var array If debug is true, then it records operations here. */
+    public $debugLog = [];
     /** @var ICacheOneProvider */
     public $service;
     /** @var string=['redis','memcache','apcu','pdoone','documentone'][$i] */
@@ -245,10 +249,17 @@ class CacheOne
      */
     public function invalidateGroup($group): bool
     {
+        if ($this->debug) {
+            $this->debugLog[] = ['type' => 'invalidateGroup', 'step' => 'init', 'family' => json_encode($group)];
+        }
         if (!is_array($group)) {
             $group = [$group];
         }
-        return $this->service->invalidateGroup($group);
+        $r = $this->service->invalidateGroup($group);
+        if ($this->debug) {
+            $this->debugLog[] = ['type' => 'invalidateGroup', 'step' => 'end', 'value' => $r];
+        }
+        return $r;
     }
 
     public function genCatId($group): string
@@ -311,6 +322,9 @@ class CacheOne
      */
     public function getCache(string $key, $family = '')
     {
+        if ($this->debug) {
+            $this->debugLog[] = ['type' => 'getCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family)];
+        }
         return $this->getValue($key);
     }
 
@@ -406,6 +420,9 @@ class CacheOne
      */
     public function setCache(string $key, $family = '', $data = null, ?int $duration = null): bool
     {
+        if ($this->debug) {
+            $this->debugLog[] = ['type' => 'setCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family)];
+        }
         return $this->set($family, $key, $data, $duration);
     }
 
@@ -727,21 +744,29 @@ class CacheOne
     /**
      * Wrapper of function invalidate()
      *
-     * @param string $key    key of the cache to invalidate.
-     * @param string $family family of the cache to invalidate.
+     * @param string       $key    key of the cache to invalidate.
+     * @param string|array $family family of the cache to invalidate.<br>
+     *                             If it is an array. then it invalidates every family in the array
      *
      * @return bool
      * @throws Exception
      * @see \eftec\CacheOne::invalidate
      *
      */
-    public function invalidateCache(string $key = '', string $family = ''): bool
+    public function invalidateCache(string $key = '', $family = ''): bool
     {
+        if (is_array($family)) {
+            $result = true;
+            foreach ($family as $f) {
+                $result = $result && $this->invalidate($f, $key);
+            }
+            return $result;
+        }
         return $this->invalidate($family, $key);
     }
 
     /**
-     * Invalidates a single key.<br>
+     * Invalidates a single key or a groups (family) of keys.<br>
      * <pre>
      * $this->invalidate('','listCustomer'); // invalidates ListCustomer
      * $this->invalidate('customer','listCustomer'); // invalidates customer:ListCustomer

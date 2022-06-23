@@ -61,7 +61,7 @@ include "../vendor/autoload.php";
 $cache=new CacheOne("redis","127.0.0.1","",6379);
 ```
 
-Creates a new connection using apcu (APCU is a extension for PHP to cache content)
+Creates a new connection using apcu (APCU is an extension for PHP to cache content)
 
 ```php
 use eftec\CacheOne;
@@ -128,7 +128,7 @@ It returns false if the operation failed.
 $cache->set("group","key1","hello world",500);
 $cache->set("group","key2","hola mundo",500);
 ```
-Group is optional and it could be used if we need to invalidate (delete) an entire group.
+Group is optional, and it could be used if we need to invalidate (delete) an entire group.
 
 ## Getting a value
 
@@ -193,7 +193,7 @@ $cache->unshift('','cart',6,2000,4,'nonew'); // if the cart has 20 elements, the
 
 ### pop
 
-It pops (extract) a value at the **end of the array**. It the value does not exists then it returns **$defaultValue** The original array is modified removing the last element of the array.
+It pops (extract) a value at the **end of the array**. If the value does not exist then it returns **$defaultValue** The original array is modified removing the last element of the array.
 
 Syntax:
 
@@ -206,7 +206,7 @@ $element=$this->pop('','cart'); // now cart is [1,2,3] and $element is 4
 
 ### shift
 
-It shift (extract) a value at the **beginner of the array**. It the value does not exists then it returns **$defaultValue** The original array is modified removing the last element of the array.
+It shifts (extract) a value at the **beginner of the array**. If the value does not exist then it returns **$defaultValue** The original array is modified removing the last element of the array.
 
 Syntax:
 
@@ -235,7 +235,7 @@ $cache->invalidate("","key1"); // invalidate a key without a group.
 
 > invalidateGroup($group): bool
 
-It invalidates every key(s) inside a group of groups.  It also clean the catalog of the group and sets it to an empty array.
+It invalidates every key(s) inside a group of groups.  It also cleans the catalog of the group and sets it to an empty array.
 
 ```php
 $cache->invalidateGroup("group"); // invalidate all keys inside group
@@ -294,6 +294,8 @@ $cache->select('table'); // PdoOne
 
 # Version
 
+* 2.12.3
+  * **[fixed]** solved a problem with invalidateCache() 
 * 2.12 2022-06-12
   * **[fixed]** CacheOne now it could be injected correctly in any case.
   * **[new]** **[redis]**  In Redis, the $schema is used to set the database (if numeric), or to prefix the values.
@@ -327,7 +329,7 @@ $cache->select('table'); // PdoOne
     * Added method setSerializer() and getSerializer(). By default, CacheOne uses PHP for serialization.
     With this feature, it is possible to serialize using json or none
 - 2.2.2 2020-03-13
-    * Now the duration of the catalog is always lasting than the duration of the key
+    * Now the duration of the catalog is always laster than the duration of the key
     * Tested the duration and expiration of the cache.
     * phpunit now is part of "require-dev" instead of "require"
 - 2.2.1 2020-03-12
