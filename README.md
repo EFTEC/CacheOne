@@ -294,6 +294,8 @@ $cache->select('table'); // PdoOne
 
 # Version
 
+* 2.12.4
+  * **[fixed]** solved a problem when the cache is not found.
 * 2.12.3
   * **[fixed]** solved a problem with invalidateCache() 
 * 2.12 2022-06-12

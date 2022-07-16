@@ -26,8 +26,8 @@ class CacheOneProviderMemcache implements ICacheOneProvider
         $this->parent = $parent;
         $this->memcache = new Memcache();
         $port = (!$port) ? 11211 : $port;
-        $r = @$this->memcache->connect($server, $port);
-        if ($r === false) {
+        $conStatus = @$this->memcache->connect($server, $port);
+        if ($conStatus === false) {
             $this->memcache = null;
             $this->parent->enabled = false;
         } else {

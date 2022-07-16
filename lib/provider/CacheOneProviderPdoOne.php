@@ -89,7 +89,7 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize($this->pdoOne->getKV($uid));
-        return $r === false ? $defaultValue : $r;
+        return $r ?? $defaultValue;
     }
 
     /**
@@ -107,7 +107,7 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@$this->pdoOne->getKV($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === false || $cat === null) {
+                if ($cat === null) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {

@@ -72,7 +72,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize(apcu_fetch($uid));
-        return $r === false ? $defaultValue : $r;
+        return $r ?? $defaultValue;
     }
 
     public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
@@ -87,7 +87,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@apcu_fetch($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === false) {
+                if ($cat === null) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {

@@ -96,7 +96,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
                 $this->documentOne->throwable=false;
                 $cat = $this->documentOne->get($catUid);
                 $this->documentOne->throwable=true;
-                if ($cat === false) {
+                if ($cat === null) {
                     $cat = array(); // created a new catalog
                 }
 

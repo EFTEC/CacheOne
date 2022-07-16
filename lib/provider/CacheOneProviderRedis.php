@@ -40,7 +40,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
         $this->redis = new Redis();
         $port = (!$port) ? 6379 : $port;
         try {
-            $r = @$this->redis->pconnect($server, $port, $timeout, null, $retry, $readTimeout);
+            $conStatus = @$this->redis->pconnect($server, $port, $timeout, null, $retry, $readTimeout);
             if(is_numeric($schema) || $schema===null) {
                 $this->redis->select($schema??0);
                 $this->redis->_prefix(null);
@@ -53,7 +53,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
             $this->parent->enabled = false;
             return;
         }
-        if ($r === false) {
+        if ($conStatus === false) {
             $this->redis = null;
             $this->parent->enabled = false;
             return;
@@ -108,7 +108,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize($this->redis->get($uid));
-        return $r === false ? $defaultValue : $r;
+        return $r ?? $defaultValue;
     }
 
     public function set(string $uid, array $groups, string $key, $value, int $duration = 1440): bool
@@ -123,7 +123,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@$this->redis->get($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === false) {
+                if ($cat === null) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {
