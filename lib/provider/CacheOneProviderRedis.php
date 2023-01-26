@@ -7,6 +7,7 @@ namespace eftec\provider;
 use eftec\CacheOne;
 use Exception;
 use Redis;
+use RedisException;
 
 class CacheOneProviderRedis implements ICacheOneProvider
 {
@@ -67,6 +68,9 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $this->redis;
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidateGroup(array $group) : bool
     {
         $numDelete = 0;
@@ -87,6 +91,9 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $numDelete > 0;
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidateAll(): bool
     {
         if ($this->redis === null) {
@@ -104,13 +111,20 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return false;
     }
 
+    /**
+     * @throws Exception
+     */
     public function get(string $key, $defaultValue = false)
     {
         $uid = $this->parent->genId($key);
-        $r = $this->parent->unserialize($this->redis->get($uid));
+        $valueUnserialized=$this->redis->get($uid);
+        $r = $this->parent->unserialize($valueUnserialized===false?null:$valueUnserialized);
         return $r ?? $defaultValue;
     }
 
+    /**
+     * @throws Exception
+     */
     public function set(string $uid, array $groups, string $key, $value, int $duration = 1440): bool
     {
         if (count($groups) === 0) {
@@ -148,6 +162,9 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return $this->redis->set($uid, $this->parent->serialize($value), $duration);
     }
 
+    /**
+     * @throws Exception
+     */
     public function invalidate(string $group = '', string $key = ''): bool
     {
         $uid = $this->parent->genId($key);
@@ -158,6 +175,9 @@ class CacheOneProviderRedis implements ICacheOneProvider
         return ($num > 0);
     }
 
+    /**
+     * @throws Exception
+     */
     public function select($dbindex) : void
     {
         $this->redis->select($dbindex);

@@ -20,7 +20,7 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.12.2
+ * @version  2.13
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
@@ -216,7 +216,11 @@ class CacheOne
      */
     public function select($dbindex): void
     {
-        $this->service->select($dbindex);
+        try {
+            $this->service->select($dbindex);
+        } catch (Exception $e) {
+            throw new RuntimeException("Error in CacheOne selecting database $dbindex, message:".$e->getMessage());
+        }
     }
 
     /**
@@ -318,7 +322,7 @@ class CacheOne
      * @return mixed
      * @throws Exception
      * @throws Exception
-     * @see \eftec\CacheOne::getValue
+     * @see CacheOne::getValue
      */
     public function getCache(string $key, $family = '')
     {
@@ -360,12 +364,12 @@ class CacheOne
      * @return array|false|mixed|string|null
      * @throws Exception
      * @throws Exception
-     * @see \eftec\CacheOne::getValue
+     * @see CacheOne::getValue
      */
     public function get($group, string $key, $defaultValue = PHP_INT_MAX)
     {
         // $this->resetStack();
-        return $this->getValue($key, $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
+        return $this->getValue($key, $defaultValue); // === PHP_INT_MAX ? $this->defaultValue : $defaultValue);
     }
 
     /**
@@ -416,7 +420,7 @@ class CacheOne
      *
      * @return bool
      * @throws Exception
-     * @see \eftec\CacheOne::set
+     * @see CacheOne::set
      */
     public function setCache(string $key, $family = '', $data = null, ?int $duration = null): bool
     {
@@ -750,7 +754,7 @@ class CacheOne
      *
      * @return bool
      * @throws Exception
-     * @see \eftec\CacheOne::invalidate
+     * @see CacheOne::invalidate
      *
      */
     public function invalidateCache(string $key = '', $family = ''): bool

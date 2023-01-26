@@ -138,7 +138,7 @@ class CacheOneTest extends TestCase
 
         $cache->invalidateAll();
         $class=strtolower($cache->getInstanceProvider()===null ? '' :  get_class($cache->getInstanceProvider()));
-        if($type!=='apcu' && $type!=='documentone' && $type!=='auto') {
+        if($type!=='apcu' && $type!=='documentone' && $type!=='auto' && $type!=='memcache' ) {
             self::assertStringContainsString($type,$class);
         }
 

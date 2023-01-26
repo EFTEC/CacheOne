@@ -28,7 +28,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
         $this->documentOne=new DocumentStoreOne($server,$schema);
         $this->parent->enabled=true;
-        $this->documentOne->autoSerialize(true);
+        $this->documentOne->autoSerialize();
 
     }
     public function getInstance(): DocumentStoreOne
@@ -58,7 +58,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     public function invalidateAll() : bool
     {
-        $keys=$this->documentOne->select('*',true);
+        $keys=$this->documentOne->select();
         $r=true;
         foreach($keys as $k) {
             $r=$r && $this->documentOne->delete($k);
@@ -123,7 +123,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
         }
         $r=$this->documentOne->insertOrUpdate($uid, $value);
         if($duration===0) {
-            $this->documentOne->setTimeStamp($uid, 1, true);
+            $this->documentOne->setTimeStamp($uid, 1);
         } else {
             $this->documentOne->setTimeStamp($uid, $duration, false);
         }

@@ -38,7 +38,7 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
     )
     {
         $this->parent = $parent;
-        $this->pdoOne = PdoOne::instance(true);
+        $this->pdoOne = PdoOne::instance();
         $this->parent->schema = $schema;
         $this->parent->enabled = true;
     }

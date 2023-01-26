@@ -8,25 +8,12 @@ or an entire group of elements.
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/CacheOne.svg)](https://packagist.org/packages/eftec/CacheOne)
 [![Total Downloads](https://poser.pugx.org/eftec/CacheOne/downloads)](https://packagist.org/packages/eftec/CacheOne)
-[![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
 [![php](https://img.shields.io/badge/php-7.2-green.svg)]()
 [![php](https://img.shields.io/badge/php-8.0-green.svg)]()
 [![php](https://img.shields.io/badge/php-8.1-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
-
-- [CacheOne](#cacheone)
-  * [Example](#example)
-  * [Creating a new instance of CacheOne](#creating-a-new-instance-of-cacheone)
-  * [Storing a value](#storing-a-value)
-  * [Getting a value](#getting-a-value)
-  * [invalidate a key](#invalidate-a-key)
-  * [invalidate a group](#invalidate-a-group)
-  * [invalidate all](#invalidate-all)
-  * [Select a database (Redis/PdoOne)](#select-a-database-redispdoone)
-- [Version](#version)
-- [License](#license)
-
 
 
 # Example
@@ -47,6 +34,32 @@ if($cacheValue===false) {
 }
 var_dump($countries);
 ```
+
+# Table of Contents
+
+<!-- TOC -->
+* [CacheOne](#cacheone)
+* [Example](#example)
+* [Table of Contents](#table-of-contents)
+* [Definitions](#definitions)
+  * [Creating a new instance of CacheOne](#creating-a-new-instance-of-cacheone)
+  * [Storing a value](#storing-a-value)
+  * [Getting a value](#getting-a-value)
+  * [setDefaultTTL](#setdefaultttl)
+  * [Pushing and Popping values form an array](#pushing-and-popping-values-form-an-array)
+    * [push](#push)
+    * [unshift](#unshift)
+    * [pop](#pop)
+    * [shift](#shift)
+  * [invalidate a key](#invalidate-a-key)
+  * [invalidate a group](#invalidate-a-group)
+  * [invalidate all](#invalidate-all)
+  * [setSerializer($serializer)](#setserializer--serializer-)
+  * [getSerializer();](#getserializer---)
+  * [Select a database (Redis/PdoOne)](#select-a-database--redispdoone-)
+* [Version](#version)
+* [License](#license)
+<!-- TOC -->
 
 # Definitions
 
@@ -293,7 +306,8 @@ $cache->select('table'); // PdoOne
 ```
 
 # Version
-
+* 2.13
+  * **[redis]** fixed a problem with redis and get() 
 * 2.12.4
   * **[fixed]** solved a problem when the cache is not found.
 * 2.12.3
