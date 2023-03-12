@@ -306,6 +306,8 @@ $cache->select('table'); // PdoOne
 ```
 
 # Version
+* 2.14
+  * updated dependencies. 
 * 2.13
   * **[redis]** fixed a problem with redis and get() 
 * 2.12.4

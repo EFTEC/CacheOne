@@ -1,5 +1,5 @@
 <?php
-/** @noinspection PhpComposerExtensionStubsInspection */
+
 
 namespace eftec\provider;
 

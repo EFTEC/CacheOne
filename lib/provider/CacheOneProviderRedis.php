@@ -7,7 +7,7 @@ namespace eftec\provider;
 use eftec\CacheOne;
 use Exception;
 use Redis;
-use RedisException;
+
 
 class CacheOneProviderRedis implements ICacheOneProvider
 {

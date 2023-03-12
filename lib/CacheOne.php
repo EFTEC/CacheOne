@@ -20,7 +20,7 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.13
+ * @version  2.14
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
