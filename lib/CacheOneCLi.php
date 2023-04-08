@@ -2,7 +2,8 @@
 
 namespace eftec;
 
-use eftec\DocumentStoreOne\DocumentStoreOne;
+use eftec\CliOne\CliOne;
+
 use Exception;
 use RuntimeException;
 
@@ -21,16 +22,45 @@ use RuntimeException;
  * @copyright (c) Jorge Castro C. Dual Licence: MIT and Commercial License  https://github.com/EFTEC/PdoOne
  * @version       1.2
  */
-class CacheOneCLi extends PdoOneCli
+class CacheOneCLi //extends PdoOneCli
 {
+    /** @var CliOne */
+    public $cli;
+    /** @var \eftec\PdoOneCli
+     * @noinspection PhpUnnecessaryFullyQualifiedNameInspection
+     */
+    public $instancePdoOneCli;
+    public $pdoOneReady=true;
     public const VERSION = '1.2';
+    public static function isCli(): bool
+    {
+        return !http_response_code();
+    }
 
     public function __construct(bool $run = true)
     {
-        parent::__construct(false);
+        /** @noinspection ClassConstantCanBeUsedInspection */
+        if(class_exists('\eftec\PdoOneCli')) {
+            $this->pdoOneReady=true;
+            $this->instancePdoOneCli=new PdoOneCli(false);
+            $this->cli=CliOne::instance(); // it creates the main menu, variables, and it includes the methods.
+            $this->cli->addMenuService('mainmenu',$this->instancePdoOneCli);
+            $this->cli->addMenuItem('mainmenu', 'connect',
+                '[{{connect}}] Configure the PDO connection', 'navigate:pdooneconnect');
+        } else {
+            $this->pdoOneReady=false;
+            $this->cli = new CliOne();
+            $this->cli->addMenu('mainmenu',
+                function($cli) {
+                    $cli->upLevel('main menu');
+                    $cli->setColor(['byellow'])->showBread();
+                }
+                , 'footer');
+            $this->cli->setVariable('connect', '<red>not loaded</red>');
+        }
+        //parent::__construct(false);
         $this->cli->debug = true;
-        $this->cli->addMenuItem('mainmenu', 'connect',
-            '[{{connect}}] Configure the PDO connection', 'navigate:pdooneconnect');
+
         $this->cli->addMenuItem('mainmenu', 'cache',
             '[{{cacheonetypeok}}] Configure the cache', 'navigate:menucacheone');
         $this->cli->setVariable('cacheonetypepdo', '<red>no</red>', false);
@@ -58,7 +88,8 @@ class CacheOneCLi extends PdoOneCli
                 $this->showLogo();
             }
             $this->funLoadConfig($loadConfig);
-            $this->cli->evalMenu('mainmenu', $this);
+            $this->cli->addMenuService('mainmenu',$this);
+            $this->cli->evalMenu('mainmenu');
         } else {
             $this->funLoadConfig($loadConfig);
         }
@@ -107,8 +138,10 @@ class CacheOneCLi extends PdoOneCli
                 $cli->setColor(['byellow'])->showBread();
             }
             , 'footer');
-        $this->cli->addMenuItem('menucacheone', 'pdo',
-            '[{{connect}}][{{cacheonetypepdo}}] Configure the PDO connection', 'cacheonepdo');
+        if($this->pdoOneReady) {
+            $this->cli->addMenuItem('menucacheone', 'pdo',
+                '[{{connect}}][{{cacheonetypepdo}}] Configure the PDO connection', 'cacheonepdo');
+        }
         $this->cli->addMenuItem('menucacheone', 'document',
             '[{{cacheonetypedocument}}] Configure the Document connection', 'cacheonedocument');
         $this->cli->addMenuItem('menucacheone', 'apcu',
@@ -148,6 +181,7 @@ class CacheOneCLi extends PdoOneCli
         }
     }
 
+    /** @noinspection PhpFullyQualifiedNameUsageInspection */
     public function menuCacheOneDocument(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -159,7 +193,8 @@ class CacheOneCLi extends PdoOneCli
         $this->cli->setVariable('cacheonetype', 'document');
         while (true) {
             try {
-                if (!class_exists(DocumentStoreOne::class)) {
+                /** @noinspection ClassConstantCanBeUsedInspection */
+                if (!class_exists('eftec\DocumentStoreOne\DocumentStoreOne')) {
                     throw new RuntimeException('DocumentStoreOne not installed');
                 }
             } catch (Exception $ex) {
@@ -181,7 +216,7 @@ class CacheOneCLi extends PdoOneCli
                 ->setInput()
                 ->evalParam(true);
             try {
-                $server->value= DocumentStoreOne::isRelativePath($server->value)?getcwd().'/'.$server->value:$server->value;
+                $server->value= \eftec\DocumentStoreOne\DocumentStoreOne::isRelativePath($server->value)?getcwd().'/'.$server->value:$server->value;
 
                 if (!is_dir($server->value)) {
                     /** @noinspection MkdirRaceConditionInspection */
@@ -192,7 +227,7 @@ class CacheOneCLi extends PdoOneCli
                 } else {
                     $this->cli->showCheck('OK', 'green', 'Database found');
                 }
-                $doc = new DocumentStoreOne($server->value, '');
+                $doc = new \eftec\DocumentStoreOne\DocumentStoreOne($server->value, '');
                 $doc->collection($schema->value, true);
                 break;
             } catch (Exception $ex) {
@@ -326,7 +361,7 @@ class CacheOneCLi extends PdoOneCli
         }
         $this->cli->setVariable('cacheonetype', 'pdoone');
         try {
-            $pdo = $this->createPdoInstance();
+            $pdo = $this->instancePdoOneCli->createPdoInstance();
             if ($pdo === null) {
                 throw new RuntimeException('Unable to connect to the database');
             }
@@ -365,6 +400,10 @@ class CacheOneCLi extends PdoOneCli
         $this->cli->upLevel('test');
         $this->cli->setColor(['byellow'])->showBread();
         $r=$this->getConfig();
+        if($r===null) {
+            $this->cli->downLevel();
+            return;
+        }
         // tableKV
         //'type', 'server', 'schema', 'port', 'user', 'password'
         if(($r['type'] === 'pdoone') && !isset($r['cacheserver']['databaseType'])) {
@@ -406,13 +445,18 @@ class CacheOneCLi extends PdoOneCli
         if ($sg->value === 'yes') {
             $saveconfig = $this->cli->getParameter('filecacheone')->setInput()->evalParam(true);
             if ($saveconfig->value) {
-                $r = $this->cli->saveDataPHPFormat($this->cli->getValue('filecacheone'), $this->getConfig());
+                $config=$this->getConfig();
+                if($config===null) {
+                    $this->cli->downLevel(2);
+                    return;
+                }
+                $r = $this->cli->saveDataPHPFormat($this->cli->getValue('filecacheone'), $config);
                 if ($r === '') {
                     $this->cli->showCheck('OK', 'green', 'file saved correctly');
                 }
             }
         }
-        $this->cli->downLevel();
+        $this->cli->downLevel(2);
     }
 
     public function menuCacheOneLoad(): void
@@ -423,12 +467,16 @@ class CacheOneCLi extends PdoOneCli
             ->setInput()
             ->evalParam(true);
         $this->funLoadConfig($saveconfig);
-        $this->cli->downLevel();
+        $this->cli->downLevel(2);
     }
 
-    public function getConfig(): array
+    public function getConfig(): ?array
     {
         $r= $this->cli->getValueAsArray(['type', 'cacheserver', 'schema', 'port', 'user', 'password']);
+        if(!isset($r['type'])) {
+            $this->cli->showCheck('ERROR', 'red','not configured yet');
+            return null;
+        }
         if($r['type']==='pdoone') {
             $r['cacheserver']=$this->cli->getValueAsArray(['databaseType', 'server', 'user', 'password', 'user', 'password','database']);
         }

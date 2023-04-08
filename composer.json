@@ -21,10 +21,10 @@
   "require": {
     "php": ">=7.2.5",
     "ext-json": "*",
-    "eftec/clione": "^1.28",
-    "eftec/pdoone": "^4.2"
+    "eftec/clione": "^1.29.1"
   },
   "require-dev": {
+    "eftec/pdoone": "^4.2",
     "phpunit/phpunit": "^8.5.13",
     "eftec/documentstoreone": "^1.25.1",
     "ext-apcu": "*",

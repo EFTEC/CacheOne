@@ -313,9 +313,11 @@ $cache->select('table'); // PdoOne
 ```
 
 # Version
+* 2.16 2023-04-08
+  * [CacheOneCli] breaks dependency with PdoOne. Now, it is optional. 
 * 2.15 2023-04-07
   * [CacheOneCli] Updated to 1.2 
-  * [CacheOne] updated the constructor so it allows to pass the configuration of PdoOne as an array
+  * [CacheOne] updated the constructor, so it allows to pass the configuration of PdoOne as an array
 * 2.14
   * updated dependencies. 
 * 2.13

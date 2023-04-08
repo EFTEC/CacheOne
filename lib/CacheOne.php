@@ -20,14 +20,14 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.15
+ * @version  2.16
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
-    public const VERSION = "2.15";
+    public const VERSION = "2.16";
     /** @var bool if true then it records every operation in $this::debugLog */
     public $debug = false;
     /** @var array If debug is true, then it records operations here. */
