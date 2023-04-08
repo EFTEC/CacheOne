@@ -90,7 +90,7 @@ class CacheOneProviderMemcache implements ICacheOneProvider
             foreach ($groups as $group) {
                 $catUid = $this->parent->genCatId($group);
                 $cat = @$this->memcache->get($catUid);
-                if ($cat === false) {
+                if ($cat === null || $cat===false) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {
@@ -122,5 +122,13 @@ class CacheOneProviderMemcache implements ICacheOneProvider
 
     public function select($dbindex): void
     {
+    }
+    public function initialize():bool
+    {
+        return true;
+    }
+    public function isInitialized():bool
+    {
+        return true;
     }
 }

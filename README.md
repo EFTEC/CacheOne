@@ -54,9 +54,9 @@ var_dump($countries);
   * [invalidate a key](#invalidate-a-key)
   * [invalidate a group](#invalidate-a-group)
   * [invalidate all](#invalidate-all)
-  * [setSerializer($serializer)](#setserializer--serializer-)
-  * [getSerializer();](#getserializer---)
-  * [Select a database (Redis/PdoOne)](#select-a-database--redispdoone-)
+  * [setSerializer($serializer)](#setserializerserializer)
+  * [getSerializer();](#getserializer)
+  * [Select a database (Redis/PdoOne)](#select-a-database-redispdoone)
 * [Version](#version)
 * [License](#license)
 <!-- TOC -->
@@ -96,13 +96,22 @@ $pdo->setKvDefaultTable('KVTABLA'); // select the table to be used as a key-valu
 $pdo->createTableKV();  // optional, create the key-value table (it throws an exception if the table exists)
 $cache=new CacheOne("pdoone"); // the instance $pdo is injected automatically into CacheOne.
 ```
+or you could use to create a PdoOne instance:
+```php
+$cache=new CacheOne(
+  "pdoone",
+  ['mysql','127.0.0.1','root','abc.123','travisdb','KVTABLA']
+  ); 
+```
 
-Creates a new connection using memcache (Memcache is an old but still function memory cache server)
+
+Creates a new connection using memcache (Memcache is an old, but it is still a functional memory cache server)
 
 ```php
 use eftec\CacheOne;
 include "../vendor/autoload.php";
-$cache=new CacheOne("memcache","127.0.0.1");
+$cache=new CacheOne("memcache","127.0.0.1"); // minimum configuration
+$cache=new CacheOne("memcache","127.0.0.1",11211,'schema'); // complete configuration
 ```
 
 Creates a new connection using the class **DocumentOne** (file system)
@@ -117,9 +126,7 @@ $cache=new CacheOne("documentone",__DIR__."/base","schema"); // folder /base/sch
 
 The library **DocumentStoreOne** works with concurrency.
 
-
-
-or creating a new connection, or redis, or memcache or apcu or documentone (it takes the first available)
+or creating a new connection, using redis, memcache, apcu or documentone (it takes the first available)
 
 ```php
 use eftec\CacheOne;
@@ -306,6 +313,9 @@ $cache->select('table'); // PdoOne
 ```
 
 # Version
+* 2.15 2023-04-07
+  * [CacheOneCli] Updated to 1.2 
+  * [CacheOne] updated the constructor so it allows to pass the configuration of PdoOne as an array
 * 2.14
   * updated dependencies. 
 * 2.13

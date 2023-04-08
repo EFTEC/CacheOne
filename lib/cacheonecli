@@ -1,0 +1,36 @@
+<?php
+
+namespace eftec;
+$path = findVendorPath();
+include_once __DIR__ . '/' . $path . '/autoload.php';
+
+include_once __DIR__ . '/CacheOneCli.php';
+// this code only runs on CLI but only if pdoonecli.php is called directly and via command line.
+if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')
+    && isset($_SERVER['PHP_SELF']) &&
+    CacheOneCli::isCli() &&
+    (basename($_SERVER['PHP_SELF']) === 'cacheonecli.php' || basename($_SERVER['PHP_SELF']) === 'cacheonecli')
+) {
+    // we also excluded it if it is called by phpunit.
+
+
+    $cli = new CacheOneCLi();
+}
+
+function findVendorPath(?string $initPath = null): string
+{
+
+    $initPath = $initPath ?: __DIR__;
+    $prefix = '';
+    $defaultvendor = $initPath;
+    // finding vendor
+    for ($i = 0; $i < 8; $i++) {
+        if (@file_exists("$initPath/{$prefix}vendor/autoload.php")) {
+            $defaultvendor = "{$prefix}vendor";
+            break;
+        }
+        $prefix .= '../';
+    }
+    return $defaultvendor;
+}
+

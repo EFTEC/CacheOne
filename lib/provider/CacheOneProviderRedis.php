@@ -44,7 +44,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
             $conStatus = @$this->redis->pconnect($server, $port, $timeout, null, $retry, $readTimeout);
             if(is_numeric($schema) || $schema===null) {
                 $this->redis->select($schema??0);
-                $this->redis->_prefix(null);
+                $this->redis->_prefix('');
             } else {
                 $this->redis->select(0);
                 $this->redis->_prefix($schema);
@@ -137,7 +137,7 @@ class CacheOneProviderRedis implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@$this->redis->get($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === null) {
+                if ($cat === null || $cat===false) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {
@@ -182,5 +182,12 @@ class CacheOneProviderRedis implements ICacheOneProvider
     {
         $this->redis->select($dbindex);
     }
-
+    public function initialize():bool
+    {
+        return true;
+    }
+    public function isInitialized():bool
+    {
+        return true;
+    }
 }

@@ -107,7 +107,7 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@$this->pdoOne->getKV($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === null) {
+                if ($cat === null || $cat===false) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {
@@ -148,6 +148,18 @@ class CacheOneProviderPdoOne implements ICacheOneProvider
     public function select($dbindex): void
     {
         $this->pdoOne->setKvDefaultTable($dbindex);
+    }
+    public function initialize():bool
+    {
+        return $this->pdoOne->createTableKV();
+    }
+    public function isInitialized():bool
+    {
+        try {
+            return !$this->pdoOne->createTableKV();
+        } catch(Exception $ex) {
+        }
+        return false;
     }
 
 }

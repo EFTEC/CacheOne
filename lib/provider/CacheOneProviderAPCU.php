@@ -87,7 +87,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
                 $catUid = $this->parent->genCatId($group);
                 $cat = $this->parent->unserialize(@apcu_fetch($catUid));
                 $cat = (is_object($cat)) ? (array)$cat : $cat;
-                if ($cat === null) {
+                if ($cat === null || $cat===false) {
                     $cat = array(); // created a new catalog
                 }
                 if (time() % 100 === 0) {
@@ -117,5 +117,13 @@ class CacheOneProviderAPCU implements ICacheOneProvider
     public function select($dbindex) : void
     {
 
+    }
+    public function initialize():bool
+    {
+        return true;
+    }
+    public function isInitialized():bool
+    {
+        return true;
     }
 }

@@ -20,13 +20,14 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.14
+ * @version  2.15
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
+    public const VERSION = "2.15";
     /** @var bool if true then it records every operation in $this::debugLog */
     public $debug = false;
     /** @var array If debug is true, then it records operations here. */
@@ -35,10 +36,8 @@ class CacheOne
     public $service;
     /** @var string=['redis','memcache','apcu','pdoone','documentone'][$i] */
     public $type;
-
     /** @var bool if the cache is up */
     public $enabled;
-
     /** @var string */
     public $schema = '';
     /** @var string The postfix of the catalog of the group */
@@ -60,20 +59,23 @@ class CacheOne
     /**
      * Open the cache
      *
-     * @param string     $type        =['auto','redis','memcache','apcu','pdoone','documentone'][$i]
-     * @param string     $server      ip of the server.
-     * @param string     $schema      Default schema (optional).<br>
-     *                                In Redis, if it is a number, then it sets the database, otherwise is a prefix.
-     * @param int|string $port        [optional] By default is 6379 (redis) and 11211 (memcached)
-     * @param string     $user        (use future)
-     * @param string     $password    (use future)
-     * @param int        $timeout     Timeout (for connection) in seconds. Zero means unlimited
-     * @param int|null   $retry       Retry timeout (in milliseconds)
-     * @param int|null   $readTimeout Read timeout (in milliseconds). Zero means unlimited
+     * @param string       $type             =['auto','redis','memcache','apcu','pdoone','documentone','document'][$i]
+     * @param string|array $server           IP of the server.  If you use PdoOne, then you must use an array with the
+     *                                       whole configuration or any other type of value if you want to inject
+     *                                       an existing instance of PdoOne.
+     * @param string       $schema           Default schema (optional).<br>
+     *                                       In Redis: if schema is a number, then it sets the database, otherwise it is
+     *                                       used as a prefix.
+     * @param int|string   $port             [optional] By default is 6379 (redis) and 11211 (memcached)
+     * @param string       $user             (use future)
+     * @param string       $password         (use future)
+     * @param int          $timeout          Timeout (for connection) in seconds. Zero means unlimited
+     * @param int|null     $retry            Retry timeout (in milliseconds)
+     * @param int|null     $readTimeout      Read timeout (in milliseconds). Zero means unlimited
      */
     public function __construct(
         string $type = 'auto',
-        string $server = '127.0.0.1',
+               $server = '127.0.0.1',
         string $schema = "",
                $port = 0
         ,
@@ -84,6 +86,7 @@ class CacheOne
         int    $readTimeout = null
     )
     {
+        $type = ($type === 'document') ? 'documentone' : $type;
         $this->type = $type;
         if ($type === 'auto') {
             if (class_exists("Redis")) {
@@ -122,8 +125,23 @@ class CacheOne
                 if (PdoOne::instance(false) !== null) {
                     $this->service = new CacheOneProviderPdoOne($this, $schema);
                 } else {
-                    $this->enabled = false;
-                    throw new RuntimeException('CacheOne: pdoone extension not installed or no instance is found');
+                    try {
+                        if (!is_array($server)) {
+                            throw new RuntimeException('CacheOne: $server must contain the configuration of PdoOne');
+                        }
+                        $inst = new PdoOne($server['databaseType'], $server['server'], $server['user'],
+                            $server['pwd'], $server['database']);
+                        if (!isset($server['databasetable'])) {
+                            throw new RuntimeException('CacheOne: PdoOne configuration without databasetable');
+                        }
+                        $this->service = new CacheOneProviderPdoOne($this, $server['database']);
+                        $inst->setKvDefaultTable($server['databasetable']);
+                        $inst->open();
+                        $this->enabled = true;
+                    } catch (Exception $ex) {
+                        $this->enabled = false;
+                        throw new RuntimeException('CacheOne: pdoone extension not installed or no instance is found');
+                    }
                 }
                 break;
             case 'apcu':
@@ -181,7 +199,7 @@ class CacheOne
                 return;
             }
             $getClass = get_class($destination[0]);
-            $array = array();
+            $array = [];
             foreach ($source as $sourceItem) {
                 $obj = new $getClass();
                 self::fixCast($obj, $sourceItem);
@@ -219,7 +237,7 @@ class CacheOne
         try {
             $this->service->select($dbindex);
         } catch (Exception $e) {
-            throw new RuntimeException("Error in CacheOne selecting database $dbindex, message:".$e->getMessage());
+            throw new RuntimeException("Error in CacheOne selecting database $dbindex, message:" . $e->getMessage());
         }
     }
 
@@ -789,6 +807,4 @@ class CacheOne
     {
         return $this->service->invalidate($group, $key);
     }
-
-
 }

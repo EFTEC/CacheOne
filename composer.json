@@ -19,12 +19,14 @@
   "minimum-stability": "beta",
   "license": "MIT",
   "require": {
-    "php": ">=7.2.5"
+    "php": ">=7.2.5",
+    "ext-json": "*",
+    "eftec/clione": "^1.28",
+    "eftec/pdoone": "^4.2"
   },
   "require-dev": {
-    "phpunit/phpunit": "^9.5.13",
-    "eftec/documentstoreone": "^1.24",
-    "eftec/pdoone": "^3.12.2||^4.0.1",
+    "phpunit/phpunit": "^8.5.13",
+    "eftec/documentstoreone": "^1.25.1",
     "ext-apcu": "*",
     "ext-redis": "*",
     "ext-memcache": "*"

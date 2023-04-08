@@ -50,4 +50,8 @@ interface ICacheOneProvider
      * @return void
      */
     public function select($dbindex) : void;
+
+    public function initialize():bool;
+    public function isInitialized():bool;
+
 }

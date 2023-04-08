@@ -96,7 +96,7 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
                 $this->documentOne->throwable=false;
                 $cat = $this->documentOne->get($catUid);
                 $this->documentOne->throwable=true;
-                if ($cat === null) {
+                if ($cat === null || $cat===false) {
                     $cat = array(); // created a new catalog
                 }
 
@@ -138,5 +138,16 @@ class CacheOneProviderDocumentOne implements ICacheOneProvider
 
     public function select($dbindex) : void
     {
+    }
+    public function initialize():bool
+    {
+        $backup=$this->documentOne->collection;
+        $this->documentOne->createCollection(""); // create base
+        $this->documentOne->createCollection($backup); // create collection
+        return true;
+    }
+    public function isInitialized():bool
+    {
+        return $this->documentOne->isCollection($this->documentOne->collection);
     }
 }
