@@ -15,19 +15,20 @@ use eftec\provider\ICacheOneProvider;
 use Exception;
 use ReflectionObject;
 use RuntimeException;
+use SebastianBergmann\CodeCoverage\TestFixture\C;
 
 /**
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.16
+ * @version  2.16.1
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
-    public const VERSION = "2.16";
+    public const VERSION = "2.16.1";
     /** @var bool if true then it records every operation in $this::debugLog */
     public $debug = false;
     /** @var array If debug is true, then it records operations here. */
@@ -166,6 +167,30 @@ class CacheOne
         if (self::$instance === null) {
             self::$instance = $this;
         }
+    }
+
+    /**
+     * It creates a new instance of CacheOne using an array
+     * @param array $array =['type','server','schema','port','user','password','timeout','retry','readTimeout'][$i]<br>
+     *                     it could be an associative array or an indexed array.
+     * @return void
+     */
+    public static function factory(array $array): CacheOne
+    {
+        if (isset($array[0])) {
+            return new CacheOne(...$array);
+        }
+        return new CacheOne(
+            $array['type'] ?? 'auto',
+            $array['server'] ?? '127.0.0.1',
+            $array['schema'] ?? "",
+            $array['port'] ?? 0,
+            $array['user'] ?? "",
+            $array['password'] ?? "",
+            $array['timeout'] ?? 8,
+            $array['retry'] ?? null,
+            $array['readTimeout'] ?? null
+        );
     }
 
     /**

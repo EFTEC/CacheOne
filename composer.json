@@ -40,5 +40,8 @@
     "psr-4": {
       "eftec\\": "lib/"
     }
-  }
+  },
+  "bin": [
+    "lib/cacheonecli"
+  ]
 }

@@ -20,10 +20,11 @@ use RuntimeException;
  * @package       eftec
  * @author        Jorge Castro Castillo
  * @copyright (c) Jorge Castro C. Dual Licence: MIT and Commercial License  https://github.com/EFTEC/PdoOne
- * @version       1.2
+ * @version       1.3
  */
 class CacheOneCLi //extends PdoOneCli
 {
+    public const VERSION = '1.3';
     /** @var CliOne */
     public $cli;
     /** @var \eftec\PdoOneCli
@@ -31,7 +32,7 @@ class CacheOneCLi //extends PdoOneCli
      */
     public $instancePdoOneCli;
     public $pdoOneReady=true;
-    public const VERSION = '1.2';
+
     public static function isCli(): bool
     {
         return !http_response_code();
@@ -450,7 +451,8 @@ class CacheOneCLi //extends PdoOneCli
                     $this->cli->downLevel(2);
                     return;
                 }
-                $r = $this->cli->saveDataPHPFormat($this->cli->getValue('filecacheone'), $config);
+                $r = $this->cli->saveDataPHPFormat($this->cli->getValue('filecacheone'), $config,
+                    '.config.php','cacheOneConfig','It is the configuration of CacheOne');
                 if ($r === '') {
                     $this->cli->showCheck('OK', 'green', 'file saved correctly');
                 }
