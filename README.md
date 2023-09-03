@@ -363,6 +363,9 @@ $cache=CacheOne::factory($cacheOneConfig);
 
 
 # Version
+* 2.17
+  * [composer.json] updated dependency
+  * [CacheOneCli] now loads a PdoOneCli instance if avaible
 * 2.16.1 2023-04-08
   * [composer.json] added cacheonecli to the /bin
   * [CacheOne] added method factory()

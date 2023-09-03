@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpUnused */
+<?php /** @noinspection UnknownInspectionInspection */
+
+/** @noinspection PhpUnused */
 
 namespace eftec;
 
@@ -42,15 +44,18 @@ class CacheOneCLi //extends PdoOneCli
     {
         /** @noinspection ClassConstantCanBeUsedInspection */
         if(class_exists('\eftec\PdoOneCli')) {
+
             $this->pdoOneReady=true;
-            $this->instancePdoOneCli=new PdoOneCli(false);
             $this->cli=CliOne::instance(); // it creates the main menu, variables, and it includes the methods.
+
+            $this->instancePdoOneCli=PdoOneCli::instance(false);
             $this->cli->addMenuService('mainmenu',$this->instancePdoOneCli);
             $this->cli->addMenuItem('mainmenu', 'connect',
                 '[{{connect}}] Configure the PDO connection', 'navigate:pdooneconnect');
         } else {
+
             $this->pdoOneReady=false;
-            $this->cli = new CliOne();
+            $this->cli = CliOne::instance();
             $this->cli->addMenu('mainmenu',
                 function($cli) {
                     $cli->upLevel('main menu');
