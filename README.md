@@ -8,11 +8,10 @@ or an entire group of elements.
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/CacheOne.svg)](https://packagist.org/packages/eftec/CacheOne)
 [![Total Downloads](https://poser.pugx.org/eftec/CacheOne/downloads)](https://packagist.org/packages/eftec/CacheOne)
-[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2024.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php-7.2-green.svg)]()
-[![php](https://img.shields.io/badge/php-8.0-green.svg)]()
-[![php](https://img.shields.io/badge/php-8.1-green.svg)]()
+[![php](https://img.shields.io/badge/php-7.4-green.svg)]()
+[![php](https://img.shields.io/badge/php-8.3-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
 
 
@@ -57,7 +56,7 @@ var_dump($countries);
   * [setSerializer($serializer)](#setserializerserializer)
   * [getSerializer();](#getserializer)
   * [Select a database (Redis/PdoOne)](#select-a-database-redispdoone)
-  * [CLI](#cli)
+* [CLI](#cli)
     * [Example REDIS](#example-redis)
 * [Version](#version)
 * [License](#license)
@@ -363,6 +362,9 @@ $cache=CacheOne::factory($cacheOneConfig);
 
 
 # Version
+* 2.18 (2024-03-02)
+  * Updating dependency to PHP 7.4. The extended support of PHP 7.2 ended 3 years ago.
+  * Added more type hinting in the code.
 * 2.17
   * [composer.json] updated dependency
   * [CacheOneCli] now loads a PdoOneCli instance if avaible

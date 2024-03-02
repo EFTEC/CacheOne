@@ -7,6 +7,7 @@ namespace eftec;
 use eftec\CliOne\CliOne;
 
 use Exception;
+use JsonException;
 use RuntimeException;
 
 /**
@@ -27,19 +28,22 @@ use RuntimeException;
 class CacheOneCLi //extends PdoOneCli
 {
     public const VERSION = '1.3';
-    /** @var CliOne */
-    public $cli;
-    /** @var \eftec\PdoOneCli
+    /** @var CliOne|null */
+    public ?CliOne $cli=null;
+    /** @var \eftec\PdoOneCli|null|mixed
      * @noinspection PhpUnnecessaryFullyQualifiedNameInspection
      */
     public $instancePdoOneCli;
-    public $pdoOneReady=true;
+    public bool $pdoOneReady=true;
 
     public static function isCli(): bool
     {
         return !http_response_code();
     }
 
+    /**
+     * @throws JsonException
+     */
     public function __construct(bool $run = true)
     {
         /** @noinspection ClassConstantCanBeUsedInspection */
@@ -101,6 +105,9 @@ class CacheOneCLi //extends PdoOneCli
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function setCallBackVariables(): void
     {
         $this->cli->setVariable('cacheonetypepdo', '<red>no</red>', false);
@@ -164,6 +171,9 @@ class CacheOneCLi //extends PdoOneCli
             '[{{cacheonetypeok}}] Integration test', 'cacheonetest');
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneAPCU(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -188,6 +198,9 @@ class CacheOneCLi //extends PdoOneCli
     }
 
     /** @noinspection PhpFullyQualifiedNameUsageInspection */
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneDocument(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -249,6 +262,9 @@ class CacheOneCLi //extends PdoOneCli
         } // while(true)
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneRedis(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -302,6 +318,9 @@ class CacheOneCLi //extends PdoOneCli
         } // while(true)
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneMemcache(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -357,6 +376,9 @@ class CacheOneCLi //extends PdoOneCli
         } // while(true)
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOnePdo(): void
     {
         $yesNoParam = $this->cli->createOrReplaceParam('confirmation', [], 'none')
@@ -439,6 +461,9 @@ class CacheOneCLi //extends PdoOneCli
         $this->cli->downLevel();
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneSave(): void
     {
         $this->cli->upLevel('save');
@@ -466,6 +491,9 @@ class CacheOneCLi //extends PdoOneCli
         $this->cli->downLevel(2);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuCacheOneLoad(): void
     {
         $this->cli->upLevel('load');
@@ -514,6 +542,9 @@ class CacheOneCLi //extends PdoOneCli
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     protected function showLogo(): void
     {
         $v = CacheOne::VERSION;

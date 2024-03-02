@@ -13,49 +13,49 @@ use eftec\provider\CacheOneProviderRedis;
 use eftec\provider\CacheOneProviderPdoOne;
 use eftec\provider\ICacheOneProvider;
 use Exception;
+use JsonException;
 use ReflectionObject;
 use RuntimeException;
-use SebastianBergmann\CodeCoverage\TestFixture\C;
 
 /**
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.17
+ * @version  2.18
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
-    public const VERSION = "2.17";
+    public const VERSION = "2.18";
     /** @var bool if true then it records every operation in $this::debugLog */
-    public $debug = false;
+    public bool $debug = false;
     /** @var array If debug is true, then it records operations here. */
-    public $debugLog = [];
-    /** @var ICacheOneProvider */
-    public $service;
+    public array $debugLog = [];
+    /** @var ICacheOneProvider|null */
+    public ?ICacheOneProvider $service = null;
     /** @var string=['redis','memcache','apcu','pdoone','documentone'][$i] */
-    public $type;
+    public string $type = 'apcu';
     /** @var bool if the cache is up */
-    public $enabled;
+    public bool $enabled = false;
     /** @var string */
-    public $schema = '';
+    public string $schema = '';
     /** @var string The postfix of the catalog of the group */
-    public $cat_postfix = '_cat';
+    public string $cat_postfix = '_cat';
     /**
      * @var int The duration of the catalog in seconds<br>
      * The default value is 7 days. The limit is 30 days (memcache limit). 0 = never expires.
      */
-    public $catDuration = 6048;
-    private $defaultTTL = 1440;
-    private $separatorUID = ':';
+    public int $catDuration = 6048;
+    private int $defaultTTL = 1440;
+    private string $separatorUID = ':';
     /** @var string=['php','json-array','json-object','none'][$i] How to serialize/unserialize the values */
-    private $serializer = 'php';
+    private string $serializer = 'php';
     /** @var mixed */
     private $defaultValue = false;
-    /** @var CacheOne used for singleton, method instance() */
-    protected static $instance;
+    /** @var CacheOne|null used for singleton, method instance() */
+    protected static ?CacheOne $instance = null;
 
     /**
      * Open the cache
@@ -297,7 +297,7 @@ class CacheOne
     public function invalidateGroup($group): bool
     {
         if ($this->debug) {
-            $this->debugLog[] = ['type' => 'invalidateGroup', 'step' => 'init', 'family' => json_encode($group)];
+            $this->debugLog[] = ['type' => 'invalidateGroup', 'step' => 'init', 'family' => json_encode($group, JSON_THROW_ON_ERROR)];
         }
         if (!is_array($group)) {
             $group = [$group];
@@ -320,18 +320,22 @@ class CacheOne
      * @param string|null $forcedSerializer =[null,'php','json-array','json-object','none'][$i]
      *
      * @return mixed
+     * @throws JsonException
      */
     public function unserialize($input, string $forcedSerializer = null)
     {
+        if ($input === false) {
+            return false;
+        }
         $forcedSerializer = $forcedSerializer ?? $this->serializer;
         switch ($forcedSerializer) {
             case 'php':
                 /** @noinspection UnserializeExploitsInspection */
                 return $input === null ? null : unserialize($input);
             case 'json-array':
-                return $input === null ? null : json_decode($input, true);
+                return $input === null ? null : json_decode($input, true, 512, JSON_THROW_ON_ERROR);
             case 'json-object':
-                return $input === null ? null : json_decode($input, false);
+                return $input === null ? null : json_decode($input, false, 512, JSON_THROW_ON_ERROR);
             case 'none':
                 return $input;
             default:
@@ -370,7 +374,7 @@ class CacheOne
     public function getCache(string $key, $family = '')
     {
         if ($this->debug) {
-            $this->debugLog[] = ['type' => 'getCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family)];
+            $this->debugLog[] = ['type' => 'getCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family, JSON_THROW_ON_ERROR)];
         }
         return $this->getValue($key);
     }
@@ -468,7 +472,7 @@ class CacheOne
     public function setCache(string $key, $family = '', $data = null, ?int $duration = null): bool
     {
         if ($this->debug) {
-            $this->debugLog[] = ['type' => 'setCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family)];
+            $this->debugLog[] = ['type' => 'setCache', 'step' => 'init', 'key' => $key, 'family' => json_encode($family, JSON_THROW_ON_ERROR)];
         }
         return $this->set($family, $key, $data, $duration);
     }
@@ -772,6 +776,7 @@ class CacheOne
      * @param mixed $input
      *
      * @return false|string
+     * @throws JsonException
      */
     public function serialize($input)
     {
@@ -780,7 +785,7 @@ class CacheOne
                 return serialize($input);
             case 'json-array':
             case 'json-object':
-                return json_encode($input);
+                return json_encode($input, JSON_THROW_ON_ERROR);
             case 'none':
                 return $input;
             default:

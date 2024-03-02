@@ -1,4 +1,5 @@
-<?php /** @noinspection ForgottenDebugOutputInspection */
+<?php /** @noinspection UnknownInspectionInspection */
+/** @noinspection ForgottenDebugOutputInspection */
 /** @noinspection PhpUndefinedClassInspection */
 /** @noinspection PhpUnhandledExceptionInspection */
 /** @noinspection SqlNoDataSourceInspection */
@@ -20,7 +21,7 @@ use stdClass;
 class CacheOneTest extends TestCase
 {
 	/** @var CacheOne */
-    protected $cacheOne;
+    protected ?CacheOne $cacheOne=null;
     public function test_noconnect(): void
     {
         $cache=new CacheOne('memcache','127.0.0.1','',11212);
