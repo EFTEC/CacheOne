@@ -156,7 +156,7 @@ class CacheOneTest extends TestCase
             self::assertStringContainsString($type,$class);
         }
 
-
+        $this->assertEquals('abc',$cache->get('group1','keynotexist','abc'));
         // wrapper test
         self::assertTrue($cache->setCache("key1", "family", "hello world"));
         self::assertEquals("hello world",$cache->getCache("key1","family"));
@@ -319,6 +319,7 @@ class CacheOneTest extends TestCase
         ini_set("apc.use_request_time", 0);
         $type='apcu';
         $this->runMe($type,'unittest');
+
         $this->runDuration($type,'unittest');
     }
     public function test_pdoone(): void

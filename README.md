@@ -362,6 +362,8 @@ $cache=CacheOne::factory($cacheOneConfig);
 
 
 # Version
+* 2.19 (2024-12-08)
+  * [apcu] solved a problem with get() and the value is not found. It returned false instead of the default value. 
 * 2.18 (2024-03-02)
   * Updating dependency to PHP 7.4. The extended support of PHP 7.2 ended 3 years ago.
   * Added more type hinting in the code.

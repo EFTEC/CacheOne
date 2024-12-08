@@ -72,7 +72,7 @@ class CacheOneProviderAPCU implements ICacheOneProvider
     {
         $uid = $this->parent->genId($key);
         $r = $this->parent->unserialize(apcu_fetch($uid));
-        return $r ?? $defaultValue;
+        return $r===false ? $defaultValue : $r;
     }
 
     public function set(string $uid, array $groups, string $key, $value, int $duration = 1440) : bool
