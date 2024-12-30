@@ -21,14 +21,14 @@ use RuntimeException;
  * Class CacheOne
  *
  * @package  eftec
- * @version  2.19
+ * @version  2.20
  * @link     https://github.com/EFTEC/CacheOne
  * @author   Jorge Patricio Castro Castillo <jcastro arroba eftec dot cl>
  * @license  Dual License: Commercial and MIT
  */
 class CacheOne
 {
-    public const VERSION = "2.19";
+    public const VERSION = "2.20";
     /** @var bool if true then it records every operation in $this::debugLog */
     public bool $debug = false;
     /** @var array If debug is true, then it records operations here. */
@@ -83,8 +83,8 @@ class CacheOne
         string $user = "",
         string $password = "",
         int    $timeout = 8,
-        int    $retry = null,
-        int    $readTimeout = null
+        ?int   $retry = null,
+        ?int   $readTimeout = null
     )
     {
         $type = ($type === 'document') ? 'documentone' : $type;
@@ -173,7 +173,7 @@ class CacheOne
      * It creates a new instance of CacheOne using an array
      * @param array $array =['type','server','schema','port','user','password','timeout','retry','readTimeout'][$i]<br>
      *                     it could be an associative array or an indexed array.
-     * @return void
+     * @return CacheOne
      */
     public static function factory(array $array): CacheOne
     {
@@ -322,7 +322,7 @@ class CacheOne
      * @return mixed
      * @throws JsonException
      */
-    public function unserialize($input, string $forcedSerializer = null)
+    public function unserialize($input, ?string $forcedSerializer = null)
     {
         if ($input === false) {
             return false;
@@ -563,7 +563,7 @@ class CacheOne
      * @return bool
      * @throws Exception
      */
-    public function push($groups, string $key, $value, int $duration = null, int $limit = 0, string $limitStrategy = 'shiftold'): bool
+    public function push($groups, string $key, $value, ?int $duration = null, int $limit = 0, string $limitStrategy = 'shiftold'): bool
     {
         return $this->executePushUnShift('push', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
@@ -648,7 +648,7 @@ class CacheOne
      * @return bool
      * @throws Exception
      */
-    public function unshift($groups, string $key, $value, int $duration = null, int $limit = 0, string $limitStrategy = 'popold'): bool
+    public function unshift($groups, string $key, $value, ?int $duration = null, int $limit = 0, string $limitStrategy = 'popold'): bool
     {
         return $this->executePushUnShift('unshift', $groups, $key, $value, $duration, $limit, $limitStrategy);
     }
@@ -676,7 +676,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function pop($group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
+    public function pop($group, string $key, $defaultValue = PHP_INT_MAX, ?int $duration = null)
     {
         return $this->executePopShift('pop', $group, $key, $defaultValue, $duration);
     }
@@ -691,7 +691,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    protected function executePopShift(string $type, $group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
+    protected function executePopShift(string $type, $group, string $key, $defaultValue = PHP_INT_MAX, ?int $duration = null)
     {
         $defaultValue = $defaultValue === PHP_INT_MAX ? $this->defaultValue : $defaultValue;
         if (!$this->enabled) {
@@ -736,7 +736,7 @@ class CacheOne
      * @throws Exception
      * @throws Exception
      */
-    public function shift($group, string $key, $defaultValue = PHP_INT_MAX, int $duration = null)
+    public function shift($group, string $key, $defaultValue = PHP_INT_MAX, ?int $duration = null)
     {
         return $this->executePopShift('shift', $group, $key, $defaultValue, $duration);
     }
